@@ -5,6 +5,7 @@ P1（2026-10-26，见 `261026-session-p1-curve-history-scenarios-i18n.md`）：0
 P1 收尾（2026-10-26，见 `261026-session-p1-e2e-mobile-chart-aria.md`）：`tests/e2e/` 收进仓库、比较页柱状图适配手机、aria-label / caption 进词典，已上线。
 修补（2026-10-26，见 `261026-session-header-upstream-errors-chart-titles.md`）：手机 header 徽章改圆点、上游连接错误 502 / 超时 504、图表标题占位文本进词典，已上线。
 修补（2026-10-26）之后：05 Tax Savings（3a / BVG 补缴省税，见 `261026-session-tax-savings.md`），已上线。
+P1 复核（2026-10-26，见 `261026-session-p1-revalidation.md`）：确认四项已有实现及提交；后端 30、前端 15、本地与线上 P1 e2e 各 13 项通过，桌面 / 手机截图检查，修正 README 的过期计划并重新部署。四项 P1 无待实现项。
 
 ## 下一轮就做
 
