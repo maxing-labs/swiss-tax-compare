@@ -57,3 +57,12 @@ export function fetchCurve(s, signal) {
 export function fetchHistory(s, signal) {
   return getJson(`/api/history?${householdParams(s)}`, signal);
 }
+
+// The tax-saving query: household plus the amounts; no `pillar3a` means the year's limit
+export function fetchSavings(s, signal, { capitals = false } = {}) {
+  const p = householdParams(s);
+  if (s.pillar3a !== null) p.set("pillar3a", String(s.pillar3a));
+  p.set("bvg", String(s.bvg));
+  if (capitals) p.set("scope", "capitals");
+  return getJson(`/api/savings?${p}`, signal);
+}

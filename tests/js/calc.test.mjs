@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { breakdown, effectiveRate, incomeBase, rankPlaces, filterPlaces, rankOf, median, curveSeries, historySeries, niceStep } from "../../static/js/calc.js";
+import { breakdown, effectiveRate, incomeBase, rankPlaces, filterPlaces, rankOf, median, curveSeries, historySeries, niceStep, rankSavings, selfEmployed3a } from "../../static/js/calc.js";
 
 const result = { incomeTax: { fed: 1000, canton: 2000, city: 2500, church: 500 }, wealthTax: { canton: 100, city: 120, church: 0 }, personal: 24 };
 
@@ -71,4 +71,17 @@ test("niceStep: a 1-2-5 step giving at most maxTicks intervals", () => {
   assert.equal(niceStep(2329, 4), 1000);
   assert.equal(niceStep(42, 5), 10);
   assert.equal(niceStep(30, 3), 10);
+});
+
+test("rankSavings: most saved first, ties by name, the user's place marked", () => {
+  const row = (city, bfsId, saved) => ({ loc: { city, bfsId }, tiers: [{ saved: 0 }, { saved: saved / 2 }, { saved }] });
+  const ranked = rankSavings([row("Zug", 1, 900), row("Bern", 2, 1500), row("Aarau", 3, 900)], 2);
+  assert.deepEqual(ranked.map(r => r.loc.city), ["Bern", "Aarau", "Zug"]);
+  assert.deepEqual(ranked.map(r => r.isYou), [true, false, false]);
+});
+
+test("selfEmployed3a: 20% of the income, capped at the limit", () => {
+  const caps = { withPension: 7258, selfEmployed: 36288 };
+  assert.equal(selfEmployed3a(caps, 100000), 20000);
+  assert.equal(selfEmployed3a(caps, 500000), 36288);
 });

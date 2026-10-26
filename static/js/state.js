@@ -8,7 +8,7 @@ const SCENARIO_KEYS = [
   "locationId", "locationName", "locationBfsId", "locationCanton", "year", "status", "kids", "conf1", "conf2",
   "mode", "inc1", "type1", "inc2", "type2", "yob1", "yob2", "taxable", "wealth"
 ];
-export const TABS = ["overview", "compare", "curve", "history", "guide"];
+export const TABS = ["overview", "compare", "curve", "history", "savings", "guide"];
 export const DEFAULT_YEAR = 2026;
 
 export const state = {
@@ -40,6 +40,9 @@ export const state = {
   compareQuery: "",
   compareSort: "totalAsc",
   showAllCompareRows: false,
+  // savings view: null = the year's 3a limit for people with a pension fund (the API default)
+  pillar3a: null,
+  bvg: 0,
   mobileFiltersCollapsed: false,
   savedScenarios: [],
   // API results
@@ -47,7 +50,9 @@ export const state = {
   calcInputs: null, // household snapshot `calc` was computed for
   compare: null,
   curve: null,
-  history: null
+  history: null,
+  savings: null,
+  savingsRank: null
 };
 
 let saveStateTimer = null;
@@ -82,7 +87,7 @@ const URL_KEYS = [
   ["year", "year"], ["status", "status"], ["kids", "kids"], ["conf1", "conf1"], ["conf2", "conf2"], ["mode", "mode"],
   ["inc1", "inc1"], ["type1", "type1"], ["inc2", "inc2"], ["type2", "type2"], ["yob1", "yob1"], ["yob2", "yob2"],
   ["taxable", "taxable"], ["wealth", "wealth"], ["scope", "compareScope"], ["canton", "compareCanton"],
-  ["tab", "activeTab"], ["lang", "lang"]
+  ["p3a", "pillar3a"], ["bvg", "bvg"], ["tab", "activeTab"], ["lang", "lang"]
 ];
 
 export function saveActiveStateToStorageAndUrl() {
@@ -176,6 +181,8 @@ export function readSnapshot(src) {
   num("yob2", 1900, 2100);
   num("taxable", 0);
   num("wealth", 0);
+  num("pillar3a", 0);
+  num("bvg", 0);
   oneOf("compareScope", ["all", "capitals", "canton"]);
   num("compareCanton", 1, 26);
   oneOf("activeTab", TABS);

@@ -47,6 +47,8 @@ export function syncFormControlsFromState() {
   document.getElementById("canton-select").classList.toggle("hidden", state.compareScope !== "canton");
   set("compare-sort", state.compareSort);
   set("compare-filter", state.compareQuery);
+  set("savings-bvg-input", state.bvg);
+  if (state.pillar3a !== null) set("savings-3a-input", state.pillar3a);
   updateFormClasses();
   updateMobileCollapseLabel();
 }

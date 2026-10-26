@@ -23,6 +23,7 @@
 - `API_searchLocation` `{Search, Language:4, TaxYear}` → 地点列表（`TaxLocationID`、`BfsID`、`ZipCode`、`City`、`Canton`、`CantonID`）；少于 2 个字符返回空
 - `API_calculateSimpleTaxes`：输入**应税所得**（`TaxableIncomeCanton/Fed`、`TaxableFortune`），不做任何扣除
 - `API_calculateDetailedTaxes`：输入**毛收入**（`RevenueType1/2`、`Revenue1/2`、`Age1/2`、`Fortune`、`Budget: []`），上游自动扣社保（AHV/ALV/NBU/BVG）和标准扣除，并返回 `MarginalTaxRate`、`TaxableIncomeFed/Canton`、`InfoFed/InfoCanton`（扣除明细，四语）
+- `API_calculateTaxBudget`：入参同 Detailed（不带 `Budget`），返回 23 项扣除 / 收入条目（`Ident`、`Value` 默认值、`Show`）。Detailed 的 `Budget` 要**把这份完整列表原样传回**，只改某项的 `Value`；只传 `[{Ident, Value}]` 会被忽略。扣 3a 用 `PRAEMIEN3A`，应税所得精确减去该金额；BVG 补缴上游没有专门条目，记在 `UEBRIGEABZUEGE`（其他扣除）。列表在不同地点间相同（已验证 ZH / GE），所以 `/api/savings` 只取一次
 - `API_calculateManySimpleTaxes`：`TaxGroupID` = `CantonID` 时返回该州**全部市镇**（毛收入口径；传应税所得会得到 0）。26 个州并行约 0.8 秒、2110 行
 - 枚举：Relationship 1 单身 / 2 已婚 / 3 同居 / 4 注册伴侣；Confession 1 新教 / 2 天主教 / 3 基督公教 / 4 无 / 5 其他；RevenueType 0 无 / 1 受雇毛薪 / 2 自雇净收入 / 3 退休金 / 4 其他；`CantonID` 按州缩写字母序 AG=1 … ZH=26
 - 年份范围 2010–2026（`API_getTaxYearRangeCanton`）；请求 2027 会静默回落，所以 `MIN_YEAR` / `MAX_YEAR` 写死在 `api/index.py`，每年更新
@@ -31,6 +32,7 @@
 
 - **零依赖**：后端只用 Python 标准库，前端是原生 ES 模块、没有构建步骤。引入依赖或构建工具前先征得用户同意。
 - **API 逻辑只放在 `api/index.py`**（`handle_api_request`）。`server.py` 只是本地开发的包装层。所有接口都是带查询参数的 GET，参数解析在 `parse_household`，同样的输入要生成同样的 URL（CDN 缓存命中）
+- **节税（`/api/savings`）**：`pillar3a`（缺省 = 当年有养老金者上限）、`bvg`、`scope=capitals`（缺省只算所在地）。gross 模式走 Detailed + `Budget`，taxable 模式用「应税所得 − 扣除额」调 Simple；页面按 `method` 注明口径。3a 上限在 `api/index.py` 的 `PILLAR_3A_CAPS`（2023–2026，有养老金 / 无养老金两档，无养老金者为净收入 20% 且不超过上限），并随 `/api/meta` 下发；来源 ESTV 通函 / BSV 公布的数字，2026-10 用 curl 对 vermoegenszentrum.ch 核对过（官方页面 curl 取不到），每年更新。26 州府 × 3 档 = 78 次上游请求，并发限制在 8，否则触发上游拒绝连接
 - **两种收入口径**：`mode=gross`（默认，走 Detailed）和 `mode=taxable`（走 Simple，边际税率用 +1'000 CHF 的差分算）。比较页在 taxable 模式下只能比 26 个州府（Simple 没有全州批量接口），前端据 `scope: "capitals"` 隐藏范围切换
 - **i18n**：用户可见文本放 `static/js/i18n/` 的 `en.js` / `de.js` / `zh.js`，`index.js` 导出 `I18N`。加或改 key 时三份同时改，`tests/js/i18n.test.mjs` 检查三份的 key、类型、函数参数个数和指南卡片一致。`index.html` 里的 aria-label 和表格 caption 也走词典（`data-i18n-aria` / `data-i18n`，HTML 里留 en 原文作回落），同一个测试会检查。德语用瑞士写法（ss，不用 ß），术语跟 ESTV 官方计算器一致；上游扣除明细只有 DE/FR/IT/EN，zh 回落到 en
 - **样式**：色板和字体 token 在 `static/style.css` 的 `:root`（与 priminfo-pro 相同的 Editorial Bold 主题）；SVG 图表颜色在 `static/js/views/chart-theme.js`；字体自托管在 `static/fonts/`

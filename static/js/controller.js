@@ -1,5 +1,5 @@
 import { I18N } from "./i18n/index.js";
-import { fetchMeta, fetchCalculation, fetchCompare, fetchCurve, fetchHistory } from "./api.js";
+import { fetchMeta, fetchCalculation, fetchCompare, fetchCurve, fetchHistory, fetchSavings } from "./api.js";
 import {
   state,
   TABS,
@@ -23,6 +23,7 @@ import { renderOverview } from "./views/overview.js";
 import { renderCompare } from "./views/compare.js";
 import { renderCurve } from "./views/curve.js";
 import { renderHistory } from "./views/history.js";
+import { renderSavings } from "./views/savings.js";
 import { renderScenarios, scenarioLabel } from "./views/scenarios.js";
 import { renderGuideTab } from "./views/guide.js";
 
@@ -30,7 +31,7 @@ import { renderGuideTab } from "./views/guide.js";
 
 // One slot per request kind; each kind keeps its result in state[kind]
 const inflight = { calc: { seq: 0, ctrl: null }, compare: { seq: 0, ctrl: null }, curve: { seq: 0, ctrl: null },
-  history: { seq: 0, ctrl: null } };
+  history: { seq: 0, ctrl: null }, savings: { seq: 0, ctrl: null }, savingsRank: { seq: 0, ctrl: null } };
 let loadingCount = 0;
 let lastFailed = false;
 
@@ -126,11 +127,33 @@ export function fetchAndRenderHistory() {
   });
 }
 
+// Own place first, then the capitals' ranking: 26 x 3 more upstream requests, kept off the first paint
+export async function fetchAndRenderSavings() {
+  await load("savings", (signal) => fetchSavings(state, signal), (json) => {
+    state.savings = json;
+    renderSavings();
+  });
+  if (!state.savings || state.savingsRank) return;
+  await load("savingsRank", (signal) => fetchSavings(state, signal, { capitals: true }), (json) => {
+    state.savingsRank = json;
+    renderSavings();
+  });
+}
+
+// The 3a / BVG amounts changed
+export function onSavingsAmountChange() {
+  saveActiveStateToStorageAndUrl();
+  invalidate("savings");
+  invalidate("savingsRank");
+  fetchAndRenderSavings();
+}
+
 // Tabs whose data is fetched when they are first shown
 const LAZY_TABS = {
   compare: { fetch: fetchAndRenderCompare, render: renderCompare },
   curve: { fetch: fetchAndRenderCurve, render: renderCurve },
-  history: { fetch: fetchAndRenderHistory, render: renderHistory }
+  history: { fetch: fetchAndRenderHistory, render: renderHistory },
+  savings: { fetch: fetchAndRenderSavings, render: renderSavings }
 };
 
 function loadActiveTab() {
@@ -144,13 +167,16 @@ export function onHouseholdChange({ locationOnly = false } = {}) {
   renderScenarios();
   fetchAndRenderCalculation();
   if (locationOnly) {
-    // the comparison does not depend on the location, only its highlighted row does
+    // the comparison and the ranking do not depend on the location, only their highlighted row does
     if (state.compare) renderCompare();
+    if (state.savingsRank) renderSavings();
   } else {
     invalidate("compare");
+    invalidate("savingsRank");
   }
   invalidate("curve");
   invalidate("history");
+  invalidate("savings");
   loadActiveTab();
 }
 
@@ -251,4 +277,5 @@ export function applyLanguage(lang) {
   if (state.compare) renderCompare();
   if (state.curve) renderCurve();
   if (state.history) renderHistory();
+  if (state.savings) renderSavings();
 }

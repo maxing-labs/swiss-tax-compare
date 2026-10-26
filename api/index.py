@@ -43,6 +43,18 @@ CANTONS = [
 ]
 CAPITAL_BFS_IDS = {bfs for _, _, bfs, _ in CANTONS}
 
+# Maximum deductible pillar 3a contribution per tax year (CHF): employees with a pension fund (BVG) /
+# people without one, e.g. self-employed (20% of net income, at most the second figure). Published
+# by the FTA (ESTV) circular and the BSV key figures; 2025 and 2026 checked 2026-10 against
+# vermoegenszentrum.ch (quotes both); the official pages did not answer curl. Update yearly.
+PILLAR_3A_CAPS = {
+    2023: (7056, 35280), 2024: (7056, 35280), 2025: (7258, 36288), 2026: (7258, 36288),
+}
+# Upstream budget items (API_calculateTaxBudget): pillar 3a contributions and "other deductions",
+# where a purchase into the pension fund (BVG buy-in) goes: upstream has no item of its own for it
+BUDGET_3A = "PRAEMIEN3A"
+BUDGET_OTHER_DEDUCTIONS = "UEBRIGEABZUEGE"
+
 # Household incomes (CHF) at which the income curve is sampled
 CURVE_INCOMES = [20000, 30000, 40000, 50000, 60000, 70000, 80000, 90000, 100000,
                  120000, 140000, 160000, 180000, 200000, 250000, 300000, 400000, 500000]
@@ -193,6 +205,13 @@ def detailed_payload(h: dict, loc_id: int, inc1: int = None, inc2: int = None) -
     p.update(_gross_fields(h, inc1, inc2))
     p.update({"TaxLocationID": loc_id, "Language": LANGUAGE_EN, "Budget": []})
     return p
+
+
+def pillar3a_caps(year: int) -> dict:
+    """Limits for `year`; years before the table use the oldest entry, later ones the newest."""
+    known = sorted(PILLAR_3A_CAPS)
+    with_pension, self_employed = PILLAR_3A_CAPS[max([y for y in known if y <= year] or known[:1])]
+    return {"withPension": with_pension, "selfEmployed": self_employed}
 
 
 def many_payload(h: dict, group_id: int) -> dict:
@@ -348,6 +367,82 @@ def compare_row(r: dict) -> dict:
     }
 
 
+def _budget_with(budget: list, amounts: dict) -> list:
+    """The upstream budget list with some items' values replaced (the list must go back whole)."""
+    return [dict(it, Value=amounts[it["Ident"]]) if it.get("Ident") in amounts else it for it in budget]
+
+
+def savings_tiers(totals: list, amounts: list) -> list:
+    """Three tiers (nothing / 3a / 3a + BVG buy-in) from their totals and cumulative deductions.
+
+    `saved` is against the first tier; `perFranc` is the tax saved per CHF of the tier's own step
+    (the second tier's step is the 3a amount, the third tier's the buy-in).
+    """
+    tiers = []
+    for i, (total, ded) in enumerate(zip(totals, amounts)):
+        step = ded - amounts[i - 1] if i else 0
+        step_saved = totals[i - 1] - total if i else 0
+        tiers.append({"deduction": ded, "total": total, "saved": totals[0] - total,
+                      "perFranc": round(step_saved / step, 4) if step else None})
+    return tiers
+
+
+def calc_savings_at(h: dict, loc_id: int, p3a: int, bvg: int, budget: list = None) -> dict:
+    """Tax at one location without deductions, with 3a, and with 3a plus a BVG buy-in.
+
+    Gross mode: upstream Detailed with the 3a / other-deductions budget items set (`budget` is
+    the list from API_calculateTaxBudget). Taxable mode: Simple on the taxable income minus the
+    deductions. Tiers with an unchanged deduction reuse the previous result.
+    """
+    amounts = [0, p3a, p3a + bvg]
+    if h["mode"] == "gross":
+        budgets = [[], _budget_with(budget, {BUDGET_3A: p3a}),
+                   _budget_with(budget, {BUDGET_3A: p3a, BUDGET_OTHER_DEDUCTIONS: bvg})]
+
+        def run(b):
+            p = detailed_payload(h, loc_id)
+            p["Budget"] = b
+            return normalize_detailed(post_upstream("API_calculateDetailedTaxes", p))
+    else:
+        budgets = amounts
+
+        def run(ded):
+            taxable = max(0, h["taxable"] - ded)
+            return normalize_simple(post_upstream("API_calculateSimpleTaxes", simple_payload(h, loc_id, taxable)), h, taxable)
+    rows = []
+    for i, b in enumerate(budgets):
+        rows.append(rows[-1] if i and amounts[i] == amounts[i - 1] else run(b))
+    return {"loc": rows[0]["loc"], "tiers": savings_tiers([r["total"] for r in rows], amounts),
+            "taxableIncomeFed": [r["taxableIncomeFed"] for r in rows]}
+
+
+def fetch_budget(h: dict, loc_id: int) -> list:
+    """Upstream's deduction items (with their defaults) for the household; same for every location."""
+    p = detailed_payload(h, loc_id)
+    del p["Budget"]
+    budget = post_upstream("API_calculateTaxBudget", p)
+    if not isinstance(budget, list) or not any(it.get("Ident") == BUDGET_3A for it in budget):
+        raise EmptyResultError("upstream budget list has no pillar 3a item")
+    return budget
+
+
+def calc_savings(h: dict, p3a: int, bvg: int, capitals: bool = False) -> dict:
+    budget = fetch_budget(h, h["loc"]) if h["mode"] == "gross" else None
+    out = {"pillar3a": p3a, "bvg": bvg, "caps": pillar3a_caps(h["year"]),
+           "method": "budget" if h["mode"] == "gross" else "taxable"}
+    if not capitals:
+        return dict(out, **calc_savings_at(h, h["loc"], p3a, bvg, budget))
+    # 26 capitals x 3 tiers: few parallel upstream requests, it refuses connections when hit too hard
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        results = list(ex.map(lambda c: calc_savings_at(h, c[3], p3a, bvg, budget), CANTONS))
+    rows = []
+    for r in results:
+        loc = r["loc"]
+        rows.append({"loc": {"id": loc["id"], "city": loc["city"], "canton": loc["canton"], "cantonId": loc["cantonId"],
+                             "bfsId": loc["bfsId"]}, "tiers": r["tiers"]})
+    return dict(out, rows=rows)
+
+
 def calc_curve(h: dict) -> dict:
     incomes = list(CURVE_INCOMES)
     own = household_income(h)
@@ -402,6 +497,7 @@ def meta() -> dict:
     return {
         "minYear": MIN_YEAR,
         "maxYear": MAX_YEAR,
+        "pillar3aCaps": {str(y): pillar3a_caps(y) for y in range(MIN_YEAR, MAX_YEAR + 1)},
         "cantons": [{"id": cid, "abbr": abbr, "capitalBfsId": bfs, "capitalLocId": loc} for cid, abbr, bfs, loc in CANTONS],
         "source": "https://swisstaxcalculator.estv.admin.ch",
     }
@@ -431,6 +527,13 @@ def handle_api_request(path: str, qs: dict) -> dict:
     if path == "/api/history":
         h = parse_household(qs)
         return dict(calc_history(h), household=h)
+    if path == "/api/savings":
+        h = parse_household(qs)
+        caps = pillar3a_caps(h["year"])
+        p3a = _int(qs, "pillar3a", caps["withPension"], 0, 1_000_000)
+        bvg = _int(qs, "bvg", 0, 0, 100_000_000)
+        capitals = qs.get("scope", ["place"])[0] == "capitals"
+        return dict(calc_savings(h, p3a, bvg, capitals), household=h)
     raise NotFoundError(f"Unknown API endpoint: {path}")
 
 

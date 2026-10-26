@@ -14,6 +14,8 @@ Swiss Tax Compare is an independent hobby project and is not affiliated with the
 - **Tax Guide:** the Swiss tax system in seven cards.
 - Shareable URLs; inputs stay in your browser. No accounts, no tracking.
 
+Tabs: Your Tax, Compare Places, Income Curve, History, Tax Savings (what a pillar 3a contribution and a BVG buy-in save, here and in the 26 cantonal capitals), Tax Guide.
+
 Planned next (see [`.agents/docs/roadmap.md`](.agents/docs/roadmap.md)): income curve, 2010–2026 history, saved scenarios, German and Chinese UI.
 
 ## Running it

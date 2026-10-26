@@ -2,6 +2,7 @@ import { I18N } from "./i18n/index.js";
 import { esc } from "./format.js";
 import { fetchLocations } from "./api.js";
 import { state, loadActiveState, loadScenarios, parseKids, isCouple, saveActiveStateDebounced } from "./state.js";
+import { incomeBase, selfEmployed3a } from "./calc.js";
 import { showToast } from "./views/toast.js";
 import { syncFormControlsFromState, updateMobileCollapseLabel } from "./views/controls.js";
 import { renderCompare, exportCompareToCsv } from "./views/compare.js";
@@ -10,6 +11,7 @@ import {
   fetchAndRenderCalculation,
   onHouseholdChange,
   onCompareViewChange,
+  onSavingsAmountChange,
   setLocation,
   switchTab,
   applyLanguage,
@@ -122,6 +124,21 @@ function bindNumber(id, key, { min = 0 } = {}) {
     state[key] = Math.round(v);
     el.value = String(state[key]);
     onHouseholdChange();
+  });
+}
+
+// 3a / BVG amounts of the savings view; they are not part of the household, so only that view reloads
+function bindSavingsAmount(id, key) {
+  const el = document.getElementById(id);
+  el.addEventListener("change", () => {
+    const v = Number(el.value);
+    if (el.value === "" || isNaN(v) || v < 0) {
+      el.value = String(state[key] ?? state.savings?.pillar3a ?? "");
+      return;
+    }
+    state[key] = Math.round(v);
+    el.value = String(state[key]);
+    onSavingsAmountChange();
   });
 }
 
@@ -257,6 +274,20 @@ function bindEvents() {
     showToast(dict().toastLocationSet(btn.dataset.city));
     switchTab("overview");
     window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+
+  bindSavingsAmount("savings-3a-input", "pillar3a");
+  bindSavingsAmount("savings-bvg-input", "bvg");
+  document.getElementById("btn-3a-pension").addEventListener("click", () => {
+    state.pillar3a = null;
+    onSavingsAmountChange();
+  });
+  document.getElementById("btn-3a-self").addEventListener("click", () => {
+    const caps = state.savings?.caps || state.savingsRank?.caps;
+    if (!caps) return;
+    state.pillar3a = selfEmployed3a(caps, incomeBase(state));
+    document.getElementById("savings-3a-input").value = String(state.pillar3a);
+    onSavingsAmountChange();
   });
 
   document.getElementById("query-form").addEventListener("submit", (e) => e.preventDefault());

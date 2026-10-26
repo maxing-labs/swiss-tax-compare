@@ -195,7 +195,10 @@
           <button type="button" role="tab" aria-selected="false" data-tab="history"><span class="tab-num">04</span><span data-i18n="tabHistory">History</span></button>
         </li>
         <li role="presentation">
-          <button type="button" role="tab" aria-selected="false" data-tab="guide"><span class="tab-num">05</span><span data-i18n="tabGuide">Tax Guide</span></button>
+          <button type="button" role="tab" aria-selected="false" data-tab="savings"><span class="tab-num">05</span><span data-i18n="tabSavings">Tax Savings</span></button>
+        </li>
+        <li role="presentation">
+          <button type="button" role="tab" aria-selected="false" data-tab="guide"><span class="tab-num">06</span><span data-i18n="tabGuide">Tax Guide</span></button>
         </li>
       </ul>
     </nav>
@@ -393,6 +396,57 @@
           <caption id="history-caption" class="sr-only" data-i18n="ariaHistoryChart">Total tax by year</caption>
           <thead id="history-thead"></thead>
           <tbody id="history-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="view-section hidden" id="view-savings" role="tabpanel">
+      <div class="toolbar-row savings-inputs">
+        <div class="toolbar-left">
+          <label class="savings-field"><span data-i18n="savingsLbl3a">Pillar 3a contribution (CHF)</span>
+            <input type="number" id="savings-3a-input" min="0" step="100" inputmode="numeric">
+          </label>
+          <button type="button" class="btn-row-action" id="btn-3a-pension" data-i18n="savingsPresetPension">Limit with pension fund</button>
+          <button type="button" class="btn-row-action" id="btn-3a-self" data-i18n="savingsPresetSelf">Limit without pension fund</button>
+          <label class="savings-field"><span data-i18n="savingsLblBvg">BVG buy-in (CHF)</span>
+            <input type="number" id="savings-bvg-input" min="0" step="1000" inputmode="numeric">
+          </label>
+        </div>
+      </div>
+      <p class="section-note" id="savings-limits"></p>
+      <p class="section-note" id="savings-method-note"></p>
+
+      <div class="chart-card savings-chart-card">
+        <div class="chart-header">
+          <div>
+            <h2 id="savings-chart-title" data-i18n="savingsChartPlaceholder">Tax with and without 3a and BVG buy-in</h2>
+            <p class="chart-sub" data-i18n="savingsChartSub">Same household and income; the amounts are deducted from taxable income. Federal, cantonal and municipal tax together.</p>
+          </div>
+        </div>
+        <div class="svg-chart-wrap">
+          <svg id="savings-svg" viewBox="0 0 820 130" preserveAspectRatio="xMidYMid meet" role="img" data-i18n-aria="ariaSavingsChart" aria-label="Total tax with and without 3a and BVG buy-in"></svg>
+        </div>
+      </div>
+
+      <div tabindex="0" role="region" aria-labelledby="savings-caption" class="table-wrapper">
+        <table id="savings-table">
+          <caption id="savings-caption" class="sr-only" data-i18n="captionSavings">Tax saved by deduction</caption>
+          <thead id="savings-thead"></thead>
+          <tbody id="savings-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="chart-header savings-rank-header">
+        <div>
+          <h2 id="savings-rank-title" data-i18n="savingsRankPlaceholder">Tax saved in the cantonal capitals</h2>
+          <p class="chart-sub" data-i18n="savingsRankSub">The same amounts in each canton's capital, most saved first. A higher tax rate saves more.</p>
+        </div>
+      </div>
+      <div tabindex="0" role="region" aria-labelledby="savings-rank-caption" class="table-wrapper">
+        <table id="savings-rank-table">
+          <caption id="savings-rank-caption" class="sr-only" data-i18n="captionSavingsRank">Tax saved by canton</caption>
+          <thead id="savings-rank-thead"></thead>
+          <tbody id="savings-rank-tbody"></tbody>
         </table>
       </div>
     </section>

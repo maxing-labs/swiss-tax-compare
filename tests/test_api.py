@@ -172,6 +172,82 @@ class EndpointTest(unittest.TestCase):
             api.handle_api_request("/api/nope", {})
 
 
+class SavingsTest(unittest.TestCase):
+    """A flat 25% on (fixture taxable income - deductions) stands in for the upstream tax."""
+    BUDGET = [{"Ident": "KKPRAEMIEN", "Value": 4560}, {"Ident": api.BUDGET_3A, "Value": 0},
+              {"Ident": api.BUDGET_OTHER_DEDUCTIONS, "Value": 0}]
+
+    def setUp(self):
+        self.calls = []
+        patcher = mock.patch.object(api, "post_upstream", self.fake)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def fake(self, operation, payload):
+        self.calls.append((operation, payload))
+        if operation == "API_calculateTaxBudget":
+            self.assertNotIn("Budget", payload)
+            return [dict(it) for it in self.BUDGET]
+        if operation == "API_calculateDetailedTaxes":
+            # the budget goes back as the whole list, or empty for "no deductions"
+            budget = {it["Ident"]: it["Value"] for it in payload["Budget"]}
+            self.assertTrue(not budget or set(budget) == {it["Ident"] for it in self.BUDGET})
+            taxable = 100000 - budget.get(api.BUDGET_3A, 0) - budget.get(api.BUDGET_OTHER_DEDUCTIONS, 0)
+        elif operation == "API_calculateSimpleTaxes":
+            taxable = payload["TaxableIncomeCanton"]
+        else:
+            raise AssertionError(operation)
+        return dict(fixture("detailed_zh.json"), TotalTax=taxable // 4, TaxableIncomeFed=taxable)
+
+    def test_three_tiers(self):
+        data = api.handle_api_request("/api/savings", qs("inc1=120000&pillar3a=7000&bvg=10000"))
+        totals = [t["total"] for t in data["tiers"]]
+        self.assertEqual(totals, [25000, 23250, 20750])
+        self.assertEqual([t["saved"] for t in data["tiers"]], [0, 1750, 4250])
+        self.assertEqual([t["deduction"] for t in data["tiers"]], [0, 7000, 17000])
+        # per CHF of each tier's own step: 3a, then the buy-in
+        self.assertEqual([t["perFranc"] for t in data["tiers"]], [None, 0.25, 0.25])
+        self.assertEqual(data["method"], "budget")
+        self.assertEqual(data["caps"], {"withPension": 7258, "selfEmployed": 36288})
+
+    def test_default_amount_is_the_cap_and_unused_tiers_are_not_requested(self):
+        data = api.handle_api_request("/api/savings", qs("inc1=120000"))
+        self.assertEqual(data["pillar3a"], 7258)
+        self.assertEqual(data["tiers"][2], dict(data["tiers"][1], perFranc=None))
+        # budget list + baseline + 3a; the zero BVG tier reuses the 3a result
+        self.assertEqual([c[0] for c in self.calls], ["API_calculateTaxBudget"] + ["API_calculateDetailedTaxes"] * 2)
+
+    def test_taxable_mode_subtracts_from_the_taxable_income(self):
+        data = api.handle_api_request("/api/savings", qs("mode=taxable&taxable=100000&pillar3a=8000&bvg=2000"))
+        self.assertEqual(data["method"], "taxable")
+        self.assertEqual([t["total"] for t in data["tiers"]], [25000, 23000, 22500])
+        self.assertNotIn("API_calculateTaxBudget", [c[0] for c in self.calls])
+
+    def test_capitals(self):
+        data = api.handle_api_request("/api/savings", qs("inc1=120000&scope=capitals&bvg=5000"))
+        self.assertEqual(len(data["rows"]), 26)
+        self.assertEqual(set(data["rows"][0]), {"loc", "tiers"})
+        self.assertEqual(len([c for c in self.calls if c[0] == "API_calculateTaxBudget"]), 1)
+
+    def test_deduction_above_income_stops_at_zero_tax_in_taxable_mode(self):
+        data = api.handle_api_request("/api/savings", qs("mode=taxable&taxable=5000&pillar3a=7258"))
+        self.assertEqual(data["tiers"][1]["total"], 0)
+
+    def test_caps_by_year(self):
+        self.assertEqual(api.pillar3a_caps(2024)["withPension"], 7056)
+        self.assertEqual(api.pillar3a_caps(2010), api.pillar3a_caps(2023))
+        self.assertEqual(api.meta()["pillar3aCaps"]["2026"]["selfEmployed"], 36288)
+
+    def test_invalid_amount(self):
+        with self.assertRaises(api.BadRequestError):
+            api.handle_api_request("/api/savings", qs("pillar3a=-5"))
+
+    def test_budget_list_without_3a_item_is_an_empty_result(self):
+        self.BUDGET = [{"Ident": "KKPRAEMIEN", "Value": 1}]
+        with self.assertRaises(api.EmptyResultError):
+            api.handle_api_request("/api/savings", qs("inc1=120000"))
+
+
 class HttpTest(unittest.TestCase):
     """Both handlers (Vercel's and the dev server's) over a real socket: status codes and cache headers."""
 

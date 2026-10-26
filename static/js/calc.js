@@ -114,3 +114,16 @@ export function scenarioSummary(calc) {
   const total = calc.result.total;
   return { total, effective: effectiveRate(total, incomeBase(calc.household)) };
 }
+
+// The 26 capitals by the tax saved with 3a plus the buy-in, most first; `isYou` marks the user's place
+export function rankSavings(rows, bfsId) {
+  const saved = (r) => r.tiers[r.tiers.length - 1].saved;
+  return [...rows]
+    .sort((a, b) => saved(b) - saved(a) || a.loc.city.localeCompare(b.loc.city))
+    .map(r => ({ ...r, isYou: r.loc.bfsId === bfsId }));
+}
+
+// The amount behind the "without a pension fund" button: 20% of the income, up to the limit
+export function selfEmployed3a(caps, income) {
+  return Math.min(caps.selfEmployed, Math.floor(income * 0.2));
+}
