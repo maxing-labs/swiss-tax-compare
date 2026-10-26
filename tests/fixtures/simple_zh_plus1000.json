@@ -1,0 +1,27 @@
+{
+ "IncomeTaxFed": 2750,
+ "IncomeTaxCanton": 5947,
+ "IncomeTaxCity": 7449,
+ "IncomeTaxChurch": 0,
+ "FortuneTaxCanton": 0,
+ "FortuneTaxCity": 0,
+ "FortuneTaxChurch": 0,
+ "PersonalTax": 24,
+ "TotalTax": 16170,
+ "TaxCredit": 0,
+ "TotalNetTax": 16170,
+ "IncomeSimpleTaxFed": 2750,
+ "IncomeSimpleTaxCanton": 6260,
+ "IncomeSimpleTaxCity": 6260,
+ "FortuneSimpleTaxCanton": 0,
+ "FortuneSimpleTaxCity": 0,
+ "Location": {
+  "TaxLocationID": 800100000,
+  "CantonID": 26,
+  "BfsID": 261,
+  "BfsName": "Zürich",
+  "ZipCode": "8001",
+  "City": "Zürich",
+  "Canton": "ZH"
+ }
+}
