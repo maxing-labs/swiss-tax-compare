@@ -108,3 +108,9 @@ export function niceStep(span, maxTicks) {
   const mag = 10 ** Math.floor(Math.log10(raw));
   return [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw - 1e-9);
 }
+
+// What a saved scenario card shows, from an /api/calculate response
+export function scenarioSummary(calc) {
+  const total = calc.result.total;
+  return { total, effective: effectiveRate(total, incomeBase(calc.household)) };
+}

@@ -1,6 +1,13 @@
 import { I18N } from "./i18n/index.js";
+import { householdParams } from "./api.js";
 
 const STORAGE_KEY_ACTIVE_STATE = "swiss_tax_compare_active_state_v1";
+const STORAGE_KEY_SCENARIOS = "swiss_tax_compare_scenarios_v1";
+// What a scenario saves: every calculation input plus the location's display fields
+const SCENARIO_KEYS = [
+  "locationId", "locationName", "locationBfsId", "locationCanton", "year", "status", "kids", "conf1", "conf2",
+  "mode", "inc1", "type1", "inc2", "type2", "yob1", "yob2", "taxable", "wealth"
+];
 export const TABS = ["overview", "compare", "curve", "history", "guide"];
 export const DEFAULT_YEAR = 2026;
 
@@ -34,8 +41,10 @@ export const state = {
   compareSort: "totalAsc",
   showAllCompareRows: false,
   mobileFiltersCollapsed: false,
+  savedScenarios: [],
   // API results
   calc: null,
+  calcInputs: null, // household snapshot `calc` was computed for
   compare: null,
   curve: null,
   history: null
@@ -102,8 +111,41 @@ export function saveActiveStateDebounced() {
   saveStateTimer = setTimeout(saveActiveStateToStorageAndUrl, 500);
 }
 
+export function householdSnapshot() {
+  const snap = {};
+  for (const k of SCENARIO_KEYS) snap[k] = Array.isArray(state[k]) ? [...state[k]] : state[k];
+  return snap;
+}
+
+// Same calculation inputs, i.e. the same API query: fields hidden by the income mode or civil status do not count
+export function sameHousehold(a, b) {
+  return householdParams(a).toString() === householdParams(b).toString();
+}
+
+// The saved scenario the inputs on screen belong to, if any
+export function findActiveScenario() {
+  return state.savedScenarios.find(s => sameHousehold(s, state)) || null;
+}
+
+export function loadScenarios() {
+  try {
+    const list = JSON.parse(localStorage.getItem(STORAGE_KEY_SCENARIOS) || "[]");
+    state.savedScenarios = Array.isArray(list) ? list.filter(s => s && s.id && Array.isArray(s.kids)) : [];
+  } catch (e) {
+    state.savedScenarios = [];
+  }
+}
+
+export function persistScenarios() {
+  try {
+    localStorage.setItem(STORAGE_KEY_SCENARIOS, JSON.stringify(state.savedScenarios));
+  } catch (e) {
+    console.error("Failed to save scenarios:", e);
+  }
+}
+
 // Copies the valid fields of `src` (storage snapshot or URL params, keyed by state name) into state
-function readSnapshot(src) {
+export function readSnapshot(src) {
   const num = (k, lo, hi) => {
     if (src[k] === undefined || src[k] === null || src[k] === "") return;
     const v = Number(src[k]);

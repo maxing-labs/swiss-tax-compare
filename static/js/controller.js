@@ -1,12 +1,29 @@
 import { I18N } from "./i18n/index.js";
 import { fetchMeta, fetchCalculation, fetchCompare, fetchCurve, fetchHistory } from "./api.js";
-import { state, TABS, saveActiveStateToStorageAndUrl } from "./state.js";
+import {
+  state,
+  TABS,
+  saveActiveStateToStorageAndUrl,
+  householdSnapshot,
+  sameHousehold,
+  findActiveScenario,
+  persistScenarios,
+  readSnapshot
+} from "./state.js";
+import { scenarioSummary } from "./calc.js";
 import { showToast } from "./views/toast.js";
-import { populateYearSelect, populateCantonSelect, updateFormClasses, updateMobileCollapseLabel } from "./views/controls.js";
+import {
+  populateYearSelect,
+  populateCantonSelect,
+  updateFormClasses,
+  updateMobileCollapseLabel,
+  syncFormControlsFromState
+} from "./views/controls.js";
 import { renderOverview } from "./views/overview.js";
 import { renderCompare } from "./views/compare.js";
 import { renderCurve } from "./views/curve.js";
 import { renderHistory } from "./views/history.js";
+import { renderScenarios, scenarioLabel } from "./views/scenarios.js";
 import { renderGuideTab } from "./views/guide.js";
 
 // Orchestration: fetch -> state -> views. main.js wires DOM events to these functions.
@@ -72,9 +89,18 @@ export async function loadMeta() {
 export function fetchAndRenderCalculation() {
   saveActiveStateToStorageAndUrl();
   updateMobileCollapseLabel();
+  const inputs = householdSnapshot();
   return load("calc", (signal) => fetchCalculation(state, signal), (json) => {
     state.calc = json;
+    state.calcInputs = inputs;
+    // a saved scenario for these inputs shows the latest figures
+    const saved = state.savedScenarios.find(s => sameHousehold(s, inputs));
+    if (saved) {
+      saved.summary = scenarioSummary(json);
+      persistScenarios();
+    }
     renderOverview();
+    renderScenarios();
   });
 }
 
@@ -115,6 +141,7 @@ function loadActiveTab() {
 // Any household input changed: recalculate, and refresh the tab on screen (the others lazily)
 export function onHouseholdChange({ locationOnly = false } = {}) {
   updateFormClasses();
+  renderScenarios();
   fetchAndRenderCalculation();
   if (locationOnly) {
     // the comparison does not depend on the location, only its highlighted row does
@@ -131,6 +158,39 @@ export function onCompareViewChange() {
   state.showAllCompareRows = false;
   saveActiveStateToStorageAndUrl();
   renderCompare();
+}
+
+// Saves the inputs on screen, or updates the scenario they already belong to
+export function saveScenario() {
+  const dict = I18N[state.lang];
+  const calcIsCurrent = state.calc && state.calcInputs && sameHousehold(state.calcInputs, state);
+  const summary = calcIsCurrent ? scenarioSummary(state.calc) : null;
+  const existing = findActiveScenario();
+  if (existing) {
+    Object.assign(existing, householdSnapshot(), { summary: summary || existing.summary });
+    showToast(dict.toastSavedUpdate(scenarioLabel(existing, dict)));
+  } else {
+    const created = { id: `s_${Date.now()}`, ...householdSnapshot(), summary };
+    state.savedScenarios.push(created);
+    showToast(dict.toastSavedNew(scenarioLabel(created, dict)));
+  }
+  persistScenarios();
+  renderScenarios();
+}
+
+export function applyScenario(id) {
+  const s = state.savedScenarios.find(x => x.id === id);
+  if (!s || sameHousehold(s, state)) return;
+  readSnapshot(s);
+  syncFormControlsFromState();
+  onHouseholdChange();
+}
+
+export function deleteScenario(id) {
+  state.savedScenarios = state.savedScenarios.filter(x => x.id !== id);
+  persistScenarios();
+  renderScenarios();
+  showToast(I18N[state.lang].toastDeleted);
 }
 
 export function setLocation({ id, name, bfsId, canton }) {
@@ -186,6 +246,7 @@ export function applyLanguage(lang) {
   updateMobileCollapseLabel();
   setBadge();
   saveActiveStateToStorageAndUrl();
+  renderScenarios();
   if (state.calc) renderOverview();
   if (state.compare) renderCompare();
   if (state.curve) renderCurve();

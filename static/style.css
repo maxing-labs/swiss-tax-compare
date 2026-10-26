@@ -1586,13 +1586,37 @@ tr.row-you td {
 .cat-RATE { background: var(--green-bg); color: var(--green-cell-text); }
 .cat-MARRIED { background: #dbe4f5; color: #1e3a8a; }
 
-/* Saved-scenario cards: the price is the total tax, the sub line the rate and the difference */
+/* Saved scenarios: chip labels and cards are buttons; a card's price is the total tax, its sub line the
+   effective rate and the difference to the figures on screen */
+.p-chip-label {
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+}
+
+button.saved-card {
+  font: inherit;
+  color: inherit;
+  text-align: start;
+}
+
 .saved-card-price {
   font-size: 1.4rem;
 }
 
-.saved-card-sub.diff-pos { color: var(--red-bad); }
-.saved-card-sub.diff-neg { color: var(--green-good); }
+.saved-card-price small {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.saved-card-sub {
+  color: var(--text-muted);
+}
 
 .match-meta-inline {
   font-size: 0.7rem;

@@ -35,7 +35,9 @@
 
     <section class="profile-bar" aria-label="Inputs">
       <div class="profile-chips-row">
-        <span class="bar-label" data-i18n="lblInputs">Your household</span>
+        <span class="bar-label" data-i18n="lblProfiles">Scenarios</span>
+        <div class="profile-chips" id="scenario-chips"></div>
+        <button type="button" class="btn-chip-action" id="btn-save-scenario" data-i18n="btnSaveProfile">+ Save Scenario</button>
         <button type="button" class="btn-mobile-collapse" id="btn-toggle-filters" aria-expanded="true">
           <span id="mobile-filter-summary">Hide Inputs ▲</span>
         </button>
@@ -199,6 +201,14 @@
 
   <main class="swiss-main">
     <section class="view-section active" id="view-overview" role="tabpanel">
+      <div class="saved-comparison-box hidden" id="saved-comparison-box">
+        <div class="section-head">
+          <h2 data-i18n="secSavedCompare">Saved Scenarios</h2>
+          <span class="section-note" data-i18n="noteSavedCompare">Click '+ Save Scenario' above to compare places, marriage, a raise or a different year side by side</span>
+        </div>
+        <div class="saved-cards-grid" id="saved-cards-grid"></div>
+      </div>
+
       <div class="kpi-grid">
         <div class="kpi-cell">
           <span class="kpi-label" data-i18n="kpiTotal">Total Tax</span>

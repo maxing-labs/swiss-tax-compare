@@ -1,7 +1,7 @@
 import { I18N } from "./i18n/index.js";
 import { esc } from "./format.js";
 import { fetchLocations } from "./api.js";
-import { state, loadActiveState, parseKids, isCouple, saveActiveStateDebounced } from "./state.js";
+import { state, loadActiveState, loadScenarios, parseKids, isCouple, saveActiveStateDebounced } from "./state.js";
 import { showToast } from "./views/toast.js";
 import { syncFormControlsFromState, updateMobileCollapseLabel } from "./views/controls.js";
 import { renderCompare, exportCompareToCsv } from "./views/compare.js";
@@ -12,7 +12,10 @@ import {
   onCompareViewChange,
   setLocation,
   switchTab,
-  applyLanguage
+  applyLanguage,
+  saveScenario,
+  applyScenario,
+  deleteScenario
 } from "./controller.js";
 
 let kbLocationIdx = -1;
@@ -161,6 +164,21 @@ function bindEvents() {
     if (e.target === aboutDialog) aboutDialog.close();
   });
 
+  document.getElementById("btn-save-scenario").addEventListener("click", saveScenario);
+  document.getElementById("scenario-chips").addEventListener("click", (e) => {
+    const del = e.target.closest("[data-del]");
+    if (del) {
+      deleteScenario(del.dataset.del);
+      return;
+    }
+    const chip = e.target.closest("[data-sid]");
+    if (chip) applyScenario(chip.dataset.sid);
+  });
+  document.getElementById("saved-cards-grid").addEventListener("click", (e) => {
+    const card = e.target.closest("[data-sid]");
+    if (card) applyScenario(card.dataset.sid);
+  });
+
   document.getElementById("btn-toggle-filters").addEventListener("click", () => {
     state.mobileFiltersCollapsed = !state.mobileFiltersCollapsed;
     document.querySelector(".profile-bar").classList.toggle("is-collapsed", state.mobileFiltersCollapsed);
@@ -246,6 +264,7 @@ function bindEvents() {
 
 async function initApp() {
   loadActiveState();
+  loadScenarios();
   bindEvents();
   await loadMeta();
   if (state.year > (state.meta?.maxYear || state.year)) state.year = state.meta.maxYear;
