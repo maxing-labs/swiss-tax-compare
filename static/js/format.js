@@ -21,8 +21,8 @@ export function fmtSignedChf(val, decimals = 0) {
 export function fmtSignedPct(val, decimals = 1) {
   if (val === null || val === undefined || isNaN(val)) return "—";
   const num = Number(val);
-  const sign = num > 0 ? "+" : "";
-  return `${sign}${num.toFixed(decimals)}%`;
+  const sign = num > 0 ? "+" : num < 0 ? "−" : "";
+  return `${sign}${Math.abs(num).toFixed(decimals)}%`;
 }
 
 // Escape upstream strings before they are interpolated into innerHTML

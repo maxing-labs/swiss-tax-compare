@@ -1,7 +1,7 @@
 import { I18N } from "./i18n/index.js";
 
 const STORAGE_KEY_ACTIVE_STATE = "swiss_tax_compare_active_state_v1";
-export const TABS = ["overview", "compare", "curve", "guide"];
+export const TABS = ["overview", "compare", "curve", "history", "guide"];
 export const DEFAULT_YEAR = 2026;
 
 export const state = {
@@ -37,7 +37,8 @@ export const state = {
   // API results
   calc: null,
   compare: null,
-  curve: null
+  curve: null,
+  history: null
 };
 
 let saveStateTimer = null;

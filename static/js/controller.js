@@ -1,17 +1,19 @@
 import { I18N } from "./i18n/index.js";
-import { fetchMeta, fetchCalculation, fetchCompare, fetchCurve } from "./api.js";
+import { fetchMeta, fetchCalculation, fetchCompare, fetchCurve, fetchHistory } from "./api.js";
 import { state, TABS, saveActiveStateToStorageAndUrl } from "./state.js";
 import { showToast } from "./views/toast.js";
 import { populateYearSelect, populateCantonSelect, updateFormClasses, updateMobileCollapseLabel } from "./views/controls.js";
 import { renderOverview } from "./views/overview.js";
 import { renderCompare } from "./views/compare.js";
 import { renderCurve } from "./views/curve.js";
+import { renderHistory } from "./views/history.js";
 import { renderGuideTab } from "./views/guide.js";
 
 // Orchestration: fetch -> state -> views. main.js wires DOM events to these functions.
 
 // One slot per request kind; each kind keeps its result in state[kind]
-const inflight = { calc: { seq: 0, ctrl: null }, compare: { seq: 0, ctrl: null }, curve: { seq: 0, ctrl: null } };
+const inflight = { calc: { seq: 0, ctrl: null }, compare: { seq: 0, ctrl: null }, curve: { seq: 0, ctrl: null },
+  history: { seq: 0, ctrl: null } };
 let loadingCount = 0;
 let lastFailed = false;
 
@@ -91,10 +93,18 @@ export function fetchAndRenderCurve() {
   });
 }
 
+export function fetchAndRenderHistory() {
+  return load("history", (signal) => fetchHistory(state, signal), (json) => {
+    state.history = json;
+    renderHistory();
+  });
+}
+
 // Tabs whose data is fetched when they are first shown
 const LAZY_TABS = {
   compare: { fetch: fetchAndRenderCompare, render: renderCompare },
-  curve: { fetch: fetchAndRenderCurve, render: renderCurve }
+  curve: { fetch: fetchAndRenderCurve, render: renderCurve },
+  history: { fetch: fetchAndRenderHistory, render: renderHistory }
 };
 
 function loadActiveTab() {
@@ -113,6 +123,7 @@ export function onHouseholdChange({ locationOnly = false } = {}) {
     invalidate("compare");
   }
   invalidate("curve");
+  invalidate("history");
   loadActiveTab();
 }
 
@@ -178,4 +189,5 @@ export function applyLanguage(lang) {
   if (state.calc) renderOverview();
   if (state.compare) renderCompare();
   if (state.curve) renderCurve();
+  if (state.history) renderHistory();
 }

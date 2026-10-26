@@ -188,7 +188,10 @@
           <button type="button" role="tab" aria-selected="false" data-tab="curve"><span class="tab-num">03</span><span data-i18n="tabCurve">Income Curve</span></button>
         </li>
         <li role="presentation">
-          <button type="button" role="tab" aria-selected="false" data-tab="guide"><span class="tab-num">04</span><span data-i18n="tabGuide">Tax Guide</span></button>
+          <button type="button" role="tab" aria-selected="false" data-tab="history"><span class="tab-num">04</span><span data-i18n="tabHistory">History</span></button>
+        </li>
+        <li role="presentation">
+          <button type="button" role="tab" aria-selected="false" data-tab="guide"><span class="tab-num">05</span><span data-i18n="tabGuide">Tax Guide</span></button>
         </li>
       </ul>
     </nav>
@@ -356,6 +359,28 @@
           <caption id="curve-caption" class="sr-only">Tax by income</caption>
           <thead id="curve-thead"></thead>
           <tbody id="curve-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="view-section hidden" id="view-history" role="tabpanel">
+      <div class="chart-card history-chart-card">
+        <div class="chart-header">
+          <div>
+            <h2 id="history-chart-title">Total tax 2010–2026 for today's inputs</h2>
+            <p class="chart-sub" data-i18n="historyChartSub">Same household, income and wealth applied to each year's tariffs and multipliers. Shows how the place's tax burden moved, not your own history.</p>
+          </div>
+        </div>
+        <div class="svg-chart-wrap">
+          <svg id="history-svg" viewBox="0 0 820 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Total tax by year"></svg>
+        </div>
+      </div>
+
+      <div tabindex="0" role="region" aria-labelledby="history-caption" class="table-wrapper">
+        <table id="history-table">
+          <caption id="history-caption" class="sr-only">Total tax by year</caption>
+          <thead id="history-thead"></thead>
+          <tbody id="history-tbody"></tbody>
         </table>
       </div>
     </section>
