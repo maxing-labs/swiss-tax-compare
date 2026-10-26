@@ -185,7 +185,10 @@
           <button type="button" role="tab" aria-selected="false" data-tab="compare"><span class="tab-num">02</span><span data-i18n="tabCompare">Compare Places</span></button>
         </li>
         <li role="presentation">
-          <button type="button" role="tab" aria-selected="false" data-tab="guide"><span class="tab-num">03</span><span data-i18n="tabGuide">Tax Guide</span></button>
+          <button type="button" role="tab" aria-selected="false" data-tab="curve"><span class="tab-num">03</span><span data-i18n="tabCurve">Income Curve</span></button>
+        </li>
+        <li role="presentation">
+          <button type="button" role="tab" aria-selected="false" data-tab="guide"><span class="tab-num">04</span><span data-i18n="tabGuide">Tax Guide</span></button>
         </li>
       </ul>
     </nav>
@@ -331,6 +334,29 @@
       </div>
       <div class="load-more-bar hidden" id="compare-load-more-wrap">
         <button type="button" class="btn-load-more" id="btn-compare-load-more"></button>
+      </div>
+    </section>
+
+    <section class="view-section hidden" id="view-curve" role="tabpanel">
+      <div class="chart-card curve-chart-card">
+        <div class="chart-header">
+          <div>
+            <h2 id="curve-chart-title">Effective and marginal tax rate by income</h2>
+            <p class="chart-sub" id="curve-chart-sub"></p>
+          </div>
+          <div class="chart-legend" id="curve-legend"></div>
+        </div>
+        <div class="svg-chart-wrap">
+          <svg id="curve-svg" viewBox="0 0 820 360" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Effective and marginal tax rate by income"></svg>
+        </div>
+      </div>
+
+      <div tabindex="0" role="region" aria-labelledby="curve-caption" class="table-wrapper">
+        <table id="curve-table">
+          <caption id="curve-caption" class="sr-only">Tax by income</caption>
+          <thead id="curve-thead"></thead>
+          <tbody id="curve-tbody"></tbody>
+        </table>
       </div>
     </section>
 

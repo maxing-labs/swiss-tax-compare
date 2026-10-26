@@ -101,3 +101,10 @@ export function historySeries(points) {
     return row;
   });
 }
+
+// Round axis step (1, 2 or 5 × 10^n) that splits `span` (> 0) into at most `maxTicks` intervals
+export function niceStep(span, maxTicks) {
+  const raw = span / maxTicks;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  return [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw - 1e-9);
+}

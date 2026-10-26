@@ -1508,8 +1508,14 @@ tr.row-total td {
   overflow-wrap: anywhere;
 }
 
-.compare-chart-card {
+.compare-chart-card,
+.curve-chart-card {
   margin-block-end: 1rem;
+}
+
+/* Legend sample for a dashed line */
+.legend-dash {
+  background: repeating-linear-gradient(90deg, var(--text-primary) 0 4px, transparent 4px 6px);
 }
 
 tr.row-you th,

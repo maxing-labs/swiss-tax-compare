@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { breakdown, effectiveRate, incomeBase, rankPlaces, filterPlaces, rankOf, median, curveSeries, historySeries } from "../../static/js/calc.js";
+import { breakdown, effectiveRate, incomeBase, rankPlaces, filterPlaces, rankOf, median, curveSeries, historySeries, niceStep } from "../../static/js/calc.js";
 
 const result = { incomeTax: { fed: 1000, canton: 2000, city: 2500, church: 500 }, wealthTax: { canton: 100, city: 120, church: 0 }, personal: 24 };
 
@@ -64,4 +64,11 @@ test("historySeries: year-over-year change skips missing years", () => {
   assert.equal(s[1].change, null);
   assert.equal(s[2].change, 100);
   assert.equal(s[2].changePct, 10);
+});
+
+test("niceStep: a 1-2-5 step giving at most maxTicks intervals", () => {
+  assert.equal(niceStep(500000, 6), 100000);
+  assert.equal(niceStep(2329, 4), 1000);
+  assert.equal(niceStep(42, 5), 10);
+  assert.equal(niceStep(30, 3), 10);
 });

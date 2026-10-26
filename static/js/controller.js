@@ -1,15 +1,17 @@
 import { I18N } from "./i18n/index.js";
-import { fetchMeta, fetchCalculation, fetchCompare } from "./api.js";
-import { state, saveActiveStateToStorageAndUrl } from "./state.js";
+import { fetchMeta, fetchCalculation, fetchCompare, fetchCurve } from "./api.js";
+import { state, TABS, saveActiveStateToStorageAndUrl } from "./state.js";
 import { showToast } from "./views/toast.js";
 import { populateYearSelect, populateCantonSelect, updateFormClasses, updateMobileCollapseLabel } from "./views/controls.js";
 import { renderOverview } from "./views/overview.js";
 import { renderCompare } from "./views/compare.js";
+import { renderCurve } from "./views/curve.js";
 import { renderGuideTab } from "./views/guide.js";
 
 // Orchestration: fetch -> state -> views. main.js wires DOM events to these functions.
 
-const inflight = { calc: { seq: 0, ctrl: null }, compare: { seq: 0, ctrl: null } };
+// One slot per request kind; each kind keeps its result in state[kind]
+const inflight = { calc: { seq: 0, ctrl: null }, compare: { seq: 0, ctrl: null }, curve: { seq: 0, ctrl: null } };
 let loadingCount = 0;
 let lastFailed = false;
 
@@ -20,6 +22,14 @@ function setBadge() {
   badge.textContent = I18N[state.lang][key];
   badge.classList.toggle("loading", loadingCount > 0);
   badge.classList.toggle("error", loadingCount === 0 && lastFailed);
+}
+
+// Its inputs changed: drop the result and any running request, so a late answer cannot store stale data
+function invalidate(kind) {
+  const slot = inflight[kind];
+  slot.seq++;
+  if (slot.ctrl) slot.ctrl.abort();
+  state[kind] = null;
 }
 
 // Runs `fetcher(signal)` for `kind`, dropping the result if a newer call superseded it
@@ -74,17 +84,36 @@ export function fetchAndRenderCompare() {
   });
 }
 
-// Any household input changed: recalculate, and refresh the comparison if it is on screen (else lazily)
+export function fetchAndRenderCurve() {
+  return load("curve", (signal) => fetchCurve(state, signal), (json) => {
+    state.curve = json;
+    renderCurve();
+  });
+}
+
+// Tabs whose data is fetched when they are first shown
+const LAZY_TABS = {
+  compare: { fetch: fetchAndRenderCompare, render: renderCompare },
+  curve: { fetch: fetchAndRenderCurve, render: renderCurve }
+};
+
+function loadActiveTab() {
+  const tab = LAZY_TABS[state.activeTab];
+  if (tab && !state[state.activeTab]) tab.fetch();
+}
+
+// Any household input changed: recalculate, and refresh the tab on screen (the others lazily)
 export function onHouseholdChange({ locationOnly = false } = {}) {
   updateFormClasses();
   fetchAndRenderCalculation();
   if (locationOnly) {
     // the comparison does not depend on the location, only its highlighted row does
     if (state.compare) renderCompare();
-    return;
+  } else {
+    invalidate("compare");
   }
-  state.compare = null;
-  if (state.activeTab === "compare") fetchAndRenderCompare();
+  invalidate("curve");
+  loadActiveTab();
 }
 
 export function onCompareViewChange() {
@@ -110,11 +139,13 @@ export function switchTab(tabId) {
     li.classList.toggle("active", isMatch);
     btn.setAttribute("aria-selected", isMatch);
   });
-  ["overview", "compare", "guide"].forEach(id => {
+  TABS.forEach(id => {
     document.getElementById(`view-${id}`).classList.toggle("hidden", id !== tabId);
   });
   saveActiveStateToStorageAndUrl();
-  if (tabId === "compare" && !state.compare) fetchAndRenderCompare();
+  // charts take the width of the visible tab: redraw what was rendered while hidden
+  if (LAZY_TABS[tabId] && state[tabId]) LAZY_TABS[tabId].render();
+  else loadActiveTab();
 }
 
 export function applyLanguage(lang) {
@@ -146,4 +177,5 @@ export function applyLanguage(lang) {
   saveActiveStateToStorageAndUrl();
   if (state.calc) renderOverview();
   if (state.compare) renderCompare();
+  if (state.curve) renderCurve();
 }

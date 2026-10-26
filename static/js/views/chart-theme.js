@@ -16,3 +16,10 @@ export const LEVEL_COLORS = {
   church: "#5b2a86",
   personal: "#6b645e"
 };
+
+// Line charts are drawn in the pixel width of their (visible) container so text keeps its size on phones;
+// a hidden tab measures 0 and gets the desktop width until it is shown (switchTab redraws it)
+export function chartWidth(svg) {
+  const w = Math.round(svg.getBoundingClientRect().width);
+  return w > 0 ? Math.min(820, Math.max(300, w)) : 820;
+}
