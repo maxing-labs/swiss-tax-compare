@@ -397,6 +397,17 @@ select {
   }
 }
 
+/* Phones: open inputs fill most of the screen, so the header scrolls away with the page; once they are
+   collapsed it sticks, with a shadow over the content scrolling beneath */
+@media (max-width: 768px) {
+  .swiss-header:has(.profile-bar:not(.is-collapsed)) {
+    position: static;
+  }
+  .swiss-header:has(.profile-bar.is-collapsed) {
+    box-shadow: 0 8px 20px rgba(28, 25, 23, 0.14);
+  }
+}
+
 /* Phones: the status badge shrinks to a dot in its colour; the text stays in the DOM for screen readers.
    The title wraps rather than run under the buttons on the narrowest screens. */
 @media (max-width: 640px) {

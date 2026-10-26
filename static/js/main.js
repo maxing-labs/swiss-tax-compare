@@ -200,6 +200,8 @@ function bindEvents() {
     state.mobileFiltersCollapsed = !state.mobileFiltersCollapsed;
     document.querySelector(".profile-bar").classList.toggle("is-collapsed", state.mobileFiltersCollapsed);
     updateMobileCollapseLabel();
+    // the opened header no longer sticks: bring it into view
+    if (!state.mobileFiltersCollapsed) window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
   bindLocationSearch();
