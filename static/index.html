@@ -28,7 +28,9 @@
           <span class="about-label" data-i18n="btnAbout">About</span>
         </button>
         <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" class="lang-btn" data-lang="zh">中</button>
           <button type="button" class="lang-btn active" data-lang="en">EN</button>
+          <button type="button" class="lang-btn" data-lang="de">DE</button>
         </div>
       </div>
     </div>
@@ -287,7 +289,7 @@
             <label><input type="radio" name="scope" value="capitals"><span data-i18n="scopeCapitals">Cantonal capitals</span></label>
             <label><input type="radio" name="scope" value="canton"><span data-i18n="scopeCanton">One canton</span></label>
           </div>
-          <select id="canton-select" aria-label="Canton" class="hidden"></select>
+          <select id="canton-select" data-i18n-aria="lblCantonSelect" aria-label="Canton" class="hidden"></select>
           <div class="search-wrap">
             <input type="search" id="compare-filter" data-i18n-placeholder="compareSearchPlaceholder" placeholder="Filter place or canton (e.g. Zug, VD)..." aria-label="Filter places">
           </div>

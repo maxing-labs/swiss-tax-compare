@@ -6,7 +6,7 @@
 
 - 本地：`python3 server.py` → http://127.0.0.1:8766
 - 后端测试：`python3 -m unittest`（不联网，用 `tests/fixtures/` 里的上游快照）。上游改版或每年更新数据后，用 `python3 -m tests.make_fixtures` 重新生成快照（需联网），再按新数据修正测试
-- 前端测试：`node --test 'tests/js/*.test.mjs'`（Node ≥ 22，只用内置 `node:test`），覆盖 `static/js/calc.js` 的纯函数。不要为此加 `package.json`，以免 Vercel 把项目识别成 Node 项目
+- 前端测试：`node --test 'tests/js/*.test.mjs'`（Node ≥ 22，只用内置 `node:test`），覆盖 `static/js/calc.js` 的纯函数、`state.js` 的 `sameHousehold` 和三份词典的一致性。不要为此加 `package.json`，以免 Vercel 把项目识别成 Node 项目
 - 截图 / 浏览器检查：没有项目内的 e2e；可用本机缓存里的 playwright-core（见 priminfo-pro 的 session 记录）对 `http://127.0.0.1:8766/?tab=compare` 截图
 - 线上：Vercel，路由见 `vercel.json`（`/api/*` → `api/index.py`，其余 → `static/`）
 
@@ -25,7 +25,7 @@
 - **零依赖**：后端只用 Python 标准库，前端是原生 ES 模块、没有构建步骤。引入依赖或构建工具前先征得用户同意。
 - **API 逻辑只放在 `api/index.py`**（`handle_api_request`）。`server.py` 只是本地开发的包装层。所有接口都是带查询参数的 GET，参数解析在 `parse_household`，同样的输入要生成同样的 URL（CDN 缓存命中）
 - **两种收入口径**：`mode=gross`（默认，走 Detailed）和 `mode=taxable`（走 Simple，边际税率用 +1'000 CHF 的差分算）。比较页在 taxable 模式下只能比 26 个州府（Simple 没有全州批量接口），前端据 `scope: "capitals"` 隐藏范围切换
-- **i18n**：用户可见文本放 `static/js/i18n/`，目前只有 `en.js`；`index.js` 导出 `I18N`。加语言时三份同时补齐，并把语言按钮加回 `index.html`
+- **i18n**：用户可见文本放 `static/js/i18n/` 的 `en.js` / `de.js` / `zh.js`，`index.js` 导出 `I18N`。加或改 key 时三份同时改，`tests/js/i18n.test.mjs` 检查三份的 key、类型、函数参数个数和指南卡片一致。德语用瑞士写法（ss，不用 ß），术语跟 ESTV 官方计算器一致；上游扣除明细只有 DE/FR/IT/EN，zh 回落到 en
 - **样式**：色板和字体 token 在 `static/style.css` 的 `:root`（与 priminfo-pro 相同的 Editorial Bold 主题）；SVG 图表颜色在 `static/js/views/chart-theme.js`；字体自托管在 `static/fonts/`
 - **CDN 缓存**：成功响应带 `s-maxage=3600`（locations / meta 为一天）。错误必须返回非 2xx 且不带缓存头：上游无结果抛 `EmptyResultError` → 502，参数错误抛 `BadRequestError` → 400
 - **前端分层**：`main.js`（DOM 事件）→ `controller.js`（取数、状态、调度渲染）→ `views/*.js`（纯渲染）；`calc.js` 是无 DOM 的纯函数，有测试

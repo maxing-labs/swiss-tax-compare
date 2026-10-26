@@ -1603,6 +1603,14 @@ button.saved-card {
   text-align: start;
 }
 
+.saved-card-head {
+  gap: 0.5rem;
+}
+
+.saved-card-head > span:last-child {
+  white-space: nowrap;
+}
+
 .saved-card-price {
   font-size: 1.4rem;
 }

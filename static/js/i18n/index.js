@@ -1,4 +1,5 @@
 import en from "./en.js";
+import de from "./de.js";
+import zh from "./zh.js";
 
-// v1 ships English only; de / zh dictionaries are planned (see .agents/docs/roadmap.md)
-export const I18N = { en };
+export const I18N = { en, de, zh };
