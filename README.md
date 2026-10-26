@@ -11,12 +11,16 @@ Swiss Tax Compare is an independent hobby project and is not affiliated with the
 - Enter gross income (standard deductions applied by the FTA calculator) or taxable income, civil status, children, church, wealth and tax year (2010–2026).
 - **Your Tax:** total, effective and marginal rate, the split between federal, cantonal, municipal and church tax, and the path from gross to taxable income.
 - **Compare Places:** the same household in every municipality of Switzerland (or one canton, or the 26 capitals): ranking, difference to your place, chart, CSV export.
+- **Income Curve:** effective and marginal tax rates by income, with your current income highlighted.
+- **History:** annual tax totals from 2010 to 2026 for the same household, with changes between years.
+- **Saved scenarios:** save, switch and compare household setups in your browser.
+- **Tax Savings:** estimate what pillar 3a contributions and BVG buy-ins save, here and in the 26 cantonal capitals.
 - **Tax Guide:** the Swiss tax system in seven cards.
-- Shareable URLs; inputs stay in your browser. No accounts, no tracking.
+- English, German and Chinese UI; shareable URLs. Inputs and saved scenarios stay in your browser. No accounts, no tracking.
 
 Tabs: Your Tax, Compare Places, Income Curve, History, Tax Savings (what a pillar 3a contribution and a BVG buy-in save, here and in the 26 cantonal capitals), Tax Guide.
 
-Planned next (see [`.agents/docs/roadmap.md`](.agents/docs/roadmap.md)): income curve, 2010–2026 history, saved scenarios, German and Chinese UI.
+See [`.agents/docs/roadmap.md`](.agents/docs/roadmap.md) for current follow-up work.
 
 ## Running it
 
