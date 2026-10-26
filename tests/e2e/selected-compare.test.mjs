@@ -82,6 +82,7 @@ test("six-place limit includes the pinned current place, and removing a chip per
   assert.equal(await chips(page).count(), 6);
   assert.equal(await page.locator("[data-remove-place]").count(), 5);
   assert.equal(await page.locator("#compare-location-search").isDisabled(), true);
+  assert.equal(await page.locator(".selected-compare-table").evaluate(el => el.scrollHeight > el.clientHeight), false);
   await add(page, { id: 690000000, name: "6900 Lugano", bfsId: 5192, canton: "TI" });
   assert.equal(await chips(page).count(), 6);
   await settle(page, () => page.locator(`[data-remove-place="${ZUG.bfsId}"]`).click());

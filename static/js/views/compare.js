@@ -30,6 +30,7 @@ export function renderCompare() {
   document.getElementById("compare-selected-controls").classList.toggle("hidden", !selected);
   document.getElementById("compare-ranking-toolbar").classList.toggle("hidden", selected);
   document.getElementById("compare-ranking-kpis").classList.toggle("hidden", selected);
+  document.getElementById("compare-table").parentElement.classList.toggle("selected-compare-table", selected);
   document.getElementById("scope-note").classList.toggle("hidden", !capitalsOnly);
   document.getElementById("scope-seg").classList.toggle("hidden", capitalsOnly);
   document.getElementById("canton-select").classList.toggle("hidden", capitalsOnly || state.compareScope !== "canton");

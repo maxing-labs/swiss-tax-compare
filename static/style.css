@@ -1596,6 +1596,7 @@ tr.row-total td {
 .compare-place-chip button:hover { color: var(--swiss-red); }
 .compare-request-status { font-size: 0.8rem; color: var(--text-secondary); }
 .compare-request-status:empty { display: none; }
+.selected-compare-table { max-block-size: none; }
 #btn-compare-retry { justify-self: start; min-block-size: 44px; }
 .lowest-badge {
   display: inline-block;
