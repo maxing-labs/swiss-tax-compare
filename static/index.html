@@ -27,7 +27,7 @@
           <span class="about-i" aria-hidden="true">i</span>
           <span class="about-label" data-i18n="btnAbout">About</span>
         </button>
-        <div class="lang-switch" role="group" aria-label="Language">
+        <div class="lang-switch" role="group" data-i18n-aria="ariaLanguage" aria-label="Language">
           <button type="button" class="lang-btn" data-lang="zh">中</button>
           <button type="button" class="lang-btn active" data-lang="en">EN</button>
           <button type="button" class="lang-btn" data-lang="de">DE</button>
@@ -35,7 +35,7 @@
       </div>
     </div>
 
-    <section class="profile-bar" aria-label="Inputs">
+    <section class="profile-bar" data-i18n-aria="ariaInputs" aria-label="Inputs">
       <div class="profile-chips-row">
         <span class="bar-label" data-i18n="lblProfiles">Scenarios</span>
         <div class="profile-chips" id="scenario-chips"></div>
@@ -180,7 +180,7 @@
       </form>
     </section>
 
-    <nav class="primary-nav" aria-label="Primary Views">
+    <nav class="primary-nav" data-i18n-aria="ariaPrimaryNav" aria-label="Primary views">
       <ul class="nav-tabs" role="tablist">
         <li class="active" role="presentation">
           <button type="button" role="tab" aria-selected="true" data-tab="overview"><span class="tab-num">01</span><span data-i18n="tabOverview">Your Tax</span></button>
@@ -242,11 +242,11 @@
               <p class="chart-sub" data-i18n="breakdownHint">Federal, cantonal, municipal and church tax on income and wealth, plus the personal tax some cantons levy.</p>
             </div>
           </div>
-          <div class="breakdown-bar" id="breakdown-bar" role="img" aria-label="Tax breakdown by level"></div>
+          <div class="breakdown-bar" id="breakdown-bar" role="img" data-i18n-aria="ariaBreakdown" aria-label="Tax breakdown by level"></div>
           <div class="chart-legend" id="breakdown-legend"></div>
           <div class="table-wrapper table-wrapper-flat">
             <table id="breakdown-table">
-              <caption class="sr-only">Tax breakdown by level</caption>
+              <caption class="sr-only" data-i18n="ariaBreakdown">Tax breakdown by level</caption>
               <thead id="breakdown-thead"></thead>
               <tbody id="breakdown-tbody"></tbody>
             </table>
@@ -263,7 +263,7 @@
           </div>
           <div class="table-wrapper table-wrapper-flat">
             <table id="waterfall-table" class="wf-table">
-              <caption class="sr-only">From gross income to taxable income</caption>
+              <caption class="sr-only" data-i18n="captionWaterfall">From gross income to taxable income</caption>
               <tbody id="waterfall-tbody"></tbody>
             </table>
           </div>
@@ -271,7 +271,7 @@
             <summary data-i18n="secDeductions">Deductions applied (federal / cantonal)</summary>
             <div class="table-wrapper table-wrapper-flat">
               <table id="deductions-table">
-                <caption class="sr-only">Deductions applied</caption>
+                <caption class="sr-only" data-i18n="captionDeductions">Deductions applied</caption>
                 <thead id="deductions-thead"></thead>
                 <tbody id="deductions-tbody"></tbody>
               </table>
@@ -291,11 +291,11 @@
           </div>
           <select id="canton-select" data-i18n-aria="lblCantonSelect" aria-label="Canton" class="hidden"></select>
           <div class="search-wrap">
-            <input type="search" id="compare-filter" data-i18n-placeholder="compareSearchPlaceholder" placeholder="Filter place or canton (e.g. Zug, VD)..." aria-label="Filter places">
+            <input type="search" id="compare-filter" data-i18n-placeholder="compareSearchPlaceholder" placeholder="Filter place or canton (e.g. Zug, VD)..." data-i18n-aria="ariaCompareFilter" aria-label="Filter places">
           </div>
         </div>
         <div class="toolbar-right">
-          <select id="compare-sort" aria-label="Sort order">
+          <select id="compare-sort" data-i18n-aria="ariaCompareSort" aria-label="Sort order">
             <option value="totalAsc" data-i18n="sortTotalAsc">Sort: Lowest tax</option>
             <option value="totalDesc" data-i18n="sortTotalDesc">Sort: Highest tax</option>
             <option value="name" data-i18n="sortName">Sort: Name</option>
@@ -336,13 +336,13 @@
           </div>
         </div>
         <div class="svg-chart-wrap">
-          <svg id="compare-svg" viewBox="0 0 820 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Total tax by place"></svg>
+          <svg id="compare-svg" viewBox="0 0 820 300" preserveAspectRatio="xMidYMid meet" role="img" data-i18n-aria="ariaCompareChart" aria-label="Total tax by place"></svg>
         </div>
       </div>
 
       <div tabindex="0" role="region" aria-labelledby="compare-caption" class="table-wrapper">
         <table id="compare-table">
-          <caption id="compare-caption" class="sr-only">Total tax by place</caption>
+          <caption id="compare-caption" class="sr-only" data-i18n="ariaCompareChart">Total tax by place</caption>
           <thead id="compare-thead"></thead>
           <tbody id="compare-tbody"></tbody>
         </table>
@@ -362,13 +362,13 @@
           <div class="chart-legend" id="curve-legend"></div>
         </div>
         <div class="svg-chart-wrap">
-          <svg id="curve-svg" viewBox="0 0 820 360" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Effective and marginal tax rate by income"></svg>
+          <svg id="curve-svg" viewBox="0 0 820 360" preserveAspectRatio="xMidYMid meet" role="img" data-i18n-aria="ariaCurveChart" aria-label="Effective and marginal tax rate by income"></svg>
         </div>
       </div>
 
       <div tabindex="0" role="region" aria-labelledby="curve-caption" class="table-wrapper">
         <table id="curve-table">
-          <caption id="curve-caption" class="sr-only">Tax by income</caption>
+          <caption id="curve-caption" class="sr-only" data-i18n="captionCurve">Tax by income</caption>
           <thead id="curve-thead"></thead>
           <tbody id="curve-tbody"></tbody>
         </table>
@@ -384,13 +384,13 @@
           </div>
         </div>
         <div class="svg-chart-wrap">
-          <svg id="history-svg" viewBox="0 0 820 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Total tax by year"></svg>
+          <svg id="history-svg" viewBox="0 0 820 300" preserveAspectRatio="xMidYMid meet" role="img" data-i18n-aria="ariaHistoryChart" aria-label="Total tax by year"></svg>
         </div>
       </div>
 
       <div tabindex="0" role="region" aria-labelledby="history-caption" class="table-wrapper">
         <table id="history-table">
-          <caption id="history-caption" class="sr-only">Total tax by year</caption>
+          <caption id="history-caption" class="sr-only" data-i18n="ariaHistoryChart">Total tax by year</caption>
           <thead id="history-thead"></thead>
           <tbody id="history-tbody"></tbody>
         </table>

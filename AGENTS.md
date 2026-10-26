@@ -6,7 +6,7 @@
 
 - 本地：`python3 server.py` → http://127.0.0.1:8766
 - 后端测试：`python3 -m unittest`（不联网，用 `tests/fixtures/` 里的上游快照）。上游改版或每年更新数据后，用 `python3 -m tests.make_fixtures` 重新生成快照（需联网），再按新数据修正测试
-- 前端测试：`node --test 'tests/js/*.test.mjs'`（Node ≥ 22，只用内置 `node:test`），覆盖 `static/js/calc.js` 的纯函数、`state.js` 的 `sameHousehold` 和三份词典的一致性。不要为此加 `package.json`，以免 Vercel 把项目识别成 Node 项目
+- 前端测试：`node --test 'tests/js/*.test.mjs'`（Node ≥ 22，只用内置 `node:test`），覆盖 `static/js/calc.js` 的纯函数、`state.js` 的 `sameHousehold`、三份词典的一致性和 `index.html` 的 aria-label / caption。不要为此加 `package.json`，以免 Vercel 把项目识别成 Node 项目
 - 浏览器测试：`tests/e2e/`，覆盖涉及 DOM 和请求的行为：状态徽章、页签懒加载与失效、曲线、历史、保存方案、de / zh 词典残留（用 `page.route` 延迟或改写响应）
   - 先运行 `python3 server.py`，需要联网（经本地服务访问真实上游）
   - 运行：`PLAYWRIGHT_CORE=<playwright-core 目录> CHROMIUM=<浏览器可执行文件> node --test --test-concurrency=1 'tests/e2e/*.test.mjs'`。`server.py` 一次只处理一个请求，多个测试文件并行时页面会加载超时。本机可用 `~/.npm/_npx/*/node_modules/playwright-core` 和 `~/Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-mac-arm64/chrome-headless-shell`
@@ -32,7 +32,7 @@
 - **零依赖**：后端只用 Python 标准库，前端是原生 ES 模块、没有构建步骤。引入依赖或构建工具前先征得用户同意。
 - **API 逻辑只放在 `api/index.py`**（`handle_api_request`）。`server.py` 只是本地开发的包装层。所有接口都是带查询参数的 GET，参数解析在 `parse_household`，同样的输入要生成同样的 URL（CDN 缓存命中）
 - **两种收入口径**：`mode=gross`（默认，走 Detailed）和 `mode=taxable`（走 Simple，边际税率用 +1'000 CHF 的差分算）。比较页在 taxable 模式下只能比 26 个州府（Simple 没有全州批量接口），前端据 `scope: "capitals"` 隐藏范围切换
-- **i18n**：用户可见文本放 `static/js/i18n/` 的 `en.js` / `de.js` / `zh.js`，`index.js` 导出 `I18N`。加或改 key 时三份同时改，`tests/js/i18n.test.mjs` 检查三份的 key、类型、函数参数个数和指南卡片一致。德语用瑞士写法（ss，不用 ß），术语跟 ESTV 官方计算器一致；上游扣除明细只有 DE/FR/IT/EN，zh 回落到 en
+- **i18n**：用户可见文本放 `static/js/i18n/` 的 `en.js` / `de.js` / `zh.js`，`index.js` 导出 `I18N`。加或改 key 时三份同时改，`tests/js/i18n.test.mjs` 检查三份的 key、类型、函数参数个数和指南卡片一致。`index.html` 里的 aria-label 和表格 caption 也走词典（`data-i18n-aria` / `data-i18n`，HTML 里留 en 原文作回落），同一个测试会检查。德语用瑞士写法（ss，不用 ß），术语跟 ESTV 官方计算器一致；上游扣除明细只有 DE/FR/IT/EN，zh 回落到 en
 - **样式**：色板和字体 token 在 `static/style.css` 的 `:root`（与 priminfo-pro 相同的 Editorial Bold 主题）；SVG 图表颜色在 `static/js/views/chart-theme.js`；字体自托管在 `static/fonts/`
 - **CDN 缓存**：成功响应带 `s-maxage=3600`（locations / meta 为一天）。错误必须返回非 2xx 且不带缓存头：上游无结果抛 `EmptyResultError` → 502，参数错误抛 `BadRequestError` → 400
 - **前端分层**：`main.js`（DOM 事件）→ `controller.js`（取数、状态、调度渲染）→ `views/*.js`（纯渲染）；`calc.js` 是无 DOM 的纯函数，有测试
