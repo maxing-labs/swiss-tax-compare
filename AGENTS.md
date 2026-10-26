@@ -34,7 +34,7 @@
 - **两种收入口径**：`mode=gross`（默认，走 Detailed）和 `mode=taxable`（走 Simple，边际税率用 +1'000 CHF 的差分算）。比较页在 taxable 模式下只能比 26 个州府（Simple 没有全州批量接口），前端据 `scope: "capitals"` 隐藏范围切换
 - **i18n**：用户可见文本放 `static/js/i18n/` 的 `en.js` / `de.js` / `zh.js`，`index.js` 导出 `I18N`。加或改 key 时三份同时改，`tests/js/i18n.test.mjs` 检查三份的 key、类型、函数参数个数和指南卡片一致。`index.html` 里的 aria-label 和表格 caption 也走词典（`data-i18n-aria` / `data-i18n`，HTML 里留 en 原文作回落），同一个测试会检查。德语用瑞士写法（ss，不用 ß），术语跟 ESTV 官方计算器一致；上游扣除明细只有 DE/FR/IT/EN，zh 回落到 en
 - **样式**：色板和字体 token 在 `static/style.css` 的 `:root`（与 priminfo-pro 相同的 Editorial Bold 主题）；SVG 图表颜色在 `static/js/views/chart-theme.js`；字体自托管在 `static/fonts/`
-- **CDN 缓存**：成功响应带 `s-maxage=3600`（locations / meta 为一天）。错误必须返回非 2xx 且不带缓存头：上游无结果抛 `EmptyResultError` → 502，参数错误抛 `BadRequestError` → 400
+- **CDN 缓存**：成功响应带 `s-maxage=3600`（locations / meta 为一天）。错误必须返回非 2xx 且不带缓存头：上游无结果抛 `EmptyResultError` → 502，上游连不上（`URLError`，如限流时的 `Connection refused`）→ 502，上游超时 → 504，参数错误抛 `BadRequestError` → 400；这些只记一行 warning，其余异常才是 500 并打印 traceback。单个上游请求不重试
 - **前端分层**：`main.js`（DOM 事件）→ `controller.js`（取数、状态、调度渲染）→ `views/*.js`（纯渲染）；`calc.js` 是无 DOM 的纯函数，有测试
 
 ## 文档

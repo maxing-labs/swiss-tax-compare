@@ -4,6 +4,7 @@ import http.client
 import json
 import threading
 import unittest
+import urllib.error
 import urllib.parse
 from http.server import ThreadingHTTPServer
 from pathlib import Path
@@ -217,6 +218,26 @@ class HttpTest(unittest.TestCase):
             res, body = self.get(self.servers[0], "/api/calculate?inc1=120000")
         self.assertEqual(res.status, 502)
         self.assertIsNone(res.getheader("Cache-Control"))
+
+    def test_upstream_unreachable_or_slow_is_a_502_or_504_without_cache(self):
+        # Connection refused is how upstream rate-limits; a slow upstream times out before or after connecting
+        cases = [
+            (urllib.error.URLError(ConnectionRefusedError(61, "Connection refused")), 502),
+            (ConnectionResetError(54, "Connection reset by peer"), 502),
+            (urllib.error.URLError(TimeoutError("timed out")), 504),
+            (TimeoutError("timed out"), 504),
+        ]
+        for error, status in cases:
+            for srv in self.servers:
+                with self.subTest(error=repr(error), handler=srv.RequestHandlerClass.__name__), \
+                        mock.patch("urllib.request.urlopen", side_effect=error), \
+                        self.assertLogs(level="WARNING") as logs:
+                    res, body = self.get(srv, "/api/calculate?inc1=120000")
+                    self.assertEqual(res.status, status)
+                    self.assertIsNone(res.getheader("Cache-Control"))
+                    self.assertIn("error", json.loads(body))
+                    # one warning line, no traceback
+                    self.assertEqual([(r.levelname, r.exc_info) for r in logs.records], [("WARNING", None)])
 
 
 if __name__ == "__main__":

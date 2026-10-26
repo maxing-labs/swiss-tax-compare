@@ -7,6 +7,7 @@ frontend needs. Standard library only.
 """
 import json
 import logging
+import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -438,7 +439,10 @@ def error_status(e: Exception) -> int:
         return 404
     if isinstance(e, BadRequestError):
         return 400
-    if isinstance(e, EmptyResultError):
+    # upstream too slow (before or after connecting) or not reachable: refusing connections is how it rate-limits
+    if isinstance(e, TimeoutError) or (isinstance(e, urllib.error.URLError) and isinstance(e.reason, TimeoutError)):
+        return 504
+    if isinstance(e, (EmptyResultError, urllib.error.URLError, ConnectionError)):
         return 502
     return 500
 
