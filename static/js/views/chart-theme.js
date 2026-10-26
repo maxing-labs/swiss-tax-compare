@@ -17,7 +17,7 @@ export const LEVEL_COLORS = {
   personal: "#6b645e"
 };
 
-// Line charts are drawn in the pixel width of their (visible) container so text keeps its size on phones;
+// Charts are drawn in the pixel width of their (visible) container so text keeps its size on phones;
 // a hidden tab measures 0 and gets the desktop width until it is shown (switchTab redraws it)
 export function chartWidth(svg) {
   const w = Math.round(svg.getBoundingClientRect().width);

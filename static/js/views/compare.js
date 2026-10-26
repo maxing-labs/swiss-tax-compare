@@ -2,7 +2,7 @@ import { I18N } from "../i18n/index.js";
 import { fmtChf, fmtPct, fmtSignedChf, esc } from "../format.js";
 import { filterPlaces, rankPlaces, rankOf, median, incomeBase, effectiveRate, wealthTaxOf } from "../calc.js";
 import { state } from "../state.js";
-import { CHART_THEME } from "./chart-theme.js";
+import { CHART_THEME, chartWidth } from "./chart-theme.js";
 
 const DEFAULT_LIMIT = 50;
 const CHART_BARS = 20;
@@ -72,9 +72,12 @@ function renderChart(asc, own, dict) {
     svg.innerHTML = "";
     return;
   }
-  const W = 820;
-  const rowH = 22;
-  const padT = 8, padB = 26, padL = 200, padR = 90;
+  // on a phone the place name goes above its bar instead of beside it
+  const W = chartWidth(svg);
+  const stacked = W < 560;
+  const rowH = stacked ? 36 : 22;
+  const barY = stacked ? 18 : 3, barH = stacked ? 14 : 16;
+  const padT = 8, padB = 26, padL = stacked ? 0 : 200, padR = stacked ? 64 : 90;
   const H = padT + bars.length * rowH + padB;
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   const maxV = Math.max(...bars.map(r => r.total), 1);
@@ -86,16 +89,19 @@ function renderChart(asc, own, dict) {
     const v = (maxV * i) / ticks;
     const x = scaleX(v);
     parts.push(`<line x1="${x}" y1="${padT}" x2="${x}" y2="${H - padB + 4}" stroke="${CHART_THEME.grid}" stroke-width="1" />`);
-    parts.push(`<text x="${x}" y="${H - padB + 18}" text-anchor="middle" font-size="11" fill="${CHART_THEME.axisText}">${fmtChf(v)}</text>`);
+    parts.push(`<text x="${x}" y="${H - padB + 18}" text-anchor="${x < 24 ? "start" : "middle"}" font-size="11" fill="${CHART_THEME.axisText}">${fmtChf(v)}</text>`);
   }
   bars.forEach((r, i) => {
     const y = padT + i * rowH;
     const w = Math.max(1, scaleX(r.total) - padL);
     const color = r.isYou ? CHART_THEME.accent : CHART_THEME.ink;
     const label = `${esc(r.loc.city)} · ${esc(r.loc.canton)}`;
-    parts.push(`<text x="${padL - 8}" y="${y + 15}" text-anchor="end" font-size="12" font-weight="${r.isYou ? 800 : 600}" fill="${color}">${label}</text>`);
-    parts.push(`<rect x="${padL}" y="${y + 3}" width="${w.toFixed(1)}" height="${rowH - 6}" fill="${color}" opacity="${r.isYou ? 1 : 0.82}"><title>${label}: CHF ${fmtChf(r.total)}</title></rect>`);
-    parts.push(`<text x="${padL + w + 6}" y="${y + 15}" font-size="11.5" font-weight="700" fill="${color}">${fmtChf(r.total)}</text>`);
+    const weight = r.isYou ? 800 : 600;
+    parts.push(stacked
+      ? `<text x="0" y="${y + 13}" font-size="12" font-weight="${weight}" fill="${color}">${label}</text>`
+      : `<text x="${padL - 8}" y="${y + 15}" text-anchor="end" font-size="12" font-weight="${weight}" fill="${color}">${label}</text>`);
+    parts.push(`<rect x="${padL}" y="${y + barY}" width="${w.toFixed(1)}" height="${barH}" fill="${color}" opacity="${r.isYou ? 1 : 0.82}"><title>${label}: CHF ${fmtChf(r.total)}</title></rect>`);
+    parts.push(`<text x="${padL + w + 6}" y="${y + barY + 12}" font-size="11.5" font-weight="700" fill="${color}">${fmtChf(r.total)}</text>`);
   });
   svg.innerHTML = parts.join("");
 }
