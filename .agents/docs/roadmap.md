@@ -2,12 +2,13 @@
 
 v1（2026-10-26）：输入表单、01 Your Tax、02 Compare Places、Tax Guide，英文。
 P1（2026-10-26，见 `261026-session-p1-curve-history-scenarios-i18n.md`）：03 Income Curve、04 History、保存方案、de / zh，全部已上线。
+P1 收尾（2026-10-26，见 `261026-session-p1-e2e-mobile-chart-aria.md`）：`tests/e2e/` 收进仓库、比较页柱状图适配手机、aria-label / caption 进词典，已上线。
 
-## P1 下一轮就做
+## 下一轮就做
 
-1. **比较页图表适配手机**：曲线和历史图已用 `chart-theme.js` 的 `chartWidth()` 按容器像素宽度绘制，比较页柱状图还是固定 820 viewBox，手机上字很小
-2. **剩余硬编码英文**：`index.html` 里的 aria-label（"Filter places"、"Sort order"、"Language"、"Inputs"、各 SVG）和表格 caption 不在词典里；补 key 后用 `data-i18n-aria` / `data-i18n`
-3. **e2e 测试**：本次的浏览器脚本在 `/tmp/swiss-tax-p1/`（会被清掉），可参照 priminfo-pro 的 `tests/e2e/` 收进仓库：状态徽章、页签懒加载与失效、方案保存 / 切换 / 删除、缺年份的历史、词典残留检查
+1. **手机 header 重叠**：390px 下状态徽章 "Data loaded" 压在 "SWISS TAX COMPARE" 标题上（P1 加回语言按钮后就有）；可在窄屏隐藏徽章文字只留圆点，或把徽章挪到第二行
+2. **上游连接错误返回 500**：`api/index.py` 的 `error_status` 只把 `EmptyResultError` 映射到 502，`URLError`（上游限流时的 `Connection refused`）落到 500 并打印 traceback；应映射到 502 / 504、不带缓存头，必要时对单个上游调用重试一次。本地连续跑 e2e 时会触发上游拒绝连接，生产在并发高时也可能遇到
+3. **图表标题占位文本**：`compare-chart-title` / `curve-chart-title` / `history-chart-title` 的 HTML 初始文本是英文，de / zh 下在页签首次加载完成前可见；给占位文本加 key
 
 ## P2
 

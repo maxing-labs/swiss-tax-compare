@@ -7,7 +7,7 @@
 - 本地：`python3 server.py` → http://127.0.0.1:8766
 - 后端测试：`python3 -m unittest`（不联网，用 `tests/fixtures/` 里的上游快照）。上游改版或每年更新数据后，用 `python3 -m tests.make_fixtures` 重新生成快照（需联网），再按新数据修正测试
 - 前端测试：`node --test 'tests/js/*.test.mjs'`（Node ≥ 22，只用内置 `node:test`），覆盖 `static/js/calc.js` 的纯函数、`state.js` 的 `sameHousehold`、三份词典的一致性和 `index.html` 的 aria-label / caption。不要为此加 `package.json`，以免 Vercel 把项目识别成 Node 项目
-- 浏览器测试：`tests/e2e/`，覆盖涉及 DOM 和请求的行为：状态徽章、页签懒加载与失效、曲线、历史、保存方案、de / zh 词典残留（用 `page.route` 延迟或改写响应）
+- 浏览器测试：`tests/e2e/`，覆盖涉及 DOM 和请求的行为：状态徽章、页签懒加载与失效、比较页图表、曲线、历史、保存方案、de / zh 词典残留（用 `page.route` 延迟或改写响应）
   - 先运行 `python3 server.py`，需要联网（经本地服务访问真实上游）
   - 运行：`PLAYWRIGHT_CORE=<playwright-core 目录> CHROMIUM=<浏览器可执行文件> node --test --test-concurrency=1 'tests/e2e/*.test.mjs'`。`server.py` 一次只处理一个请求，多个测试文件并行时页面会加载超时。本机可用 `~/.npm/_npx/*/node_modules/playwright-core` 和 `~/Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-mac-arm64/chrome-headless-shell`
   - playwright-core 不是项目依赖，不要加 `package.json`。找不到 playwright-core 时测试自动跳过；它自带的浏览器版本已安装时可以不设 `CHROMIUM`
