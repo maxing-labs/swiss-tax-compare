@@ -7,7 +7,14 @@
 - 本地：`python3 server.py` → http://127.0.0.1:8766
 - 后端测试：`python3 -m unittest`（不联网，用 `tests/fixtures/` 里的上游快照）。上游改版或每年更新数据后，用 `python3 -m tests.make_fixtures` 重新生成快照（需联网），再按新数据修正测试
 - 前端测试：`node --test 'tests/js/*.test.mjs'`（Node ≥ 22，只用内置 `node:test`），覆盖 `static/js/calc.js` 的纯函数、`state.js` 的 `sameHousehold` 和三份词典的一致性。不要为此加 `package.json`，以免 Vercel 把项目识别成 Node 项目
-- 截图 / 浏览器检查：没有项目内的 e2e；可用本机缓存里的 playwright-core（见 priminfo-pro 的 session 记录）对 `http://127.0.0.1:8766/?tab=compare` 截图
+- 浏览器测试：`tests/e2e/`，覆盖涉及 DOM 和请求的行为：状态徽章、页签懒加载与失效、曲线、历史、保存方案、de / zh 词典残留（用 `page.route` 延迟或改写响应）
+  - 先运行 `python3 server.py`，需要联网（经本地服务访问真实上游）
+  - 运行：`PLAYWRIGHT_CORE=<playwright-core 目录> CHROMIUM=<浏览器可执行文件> node --test --test-concurrency=1 'tests/e2e/*.test.mjs'`。`server.py` 一次只处理一个请求，多个测试文件并行时页面会加载超时。本机可用 `~/.npm/_npx/*/node_modules/playwright-core` 和 `~/Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-mac-arm64/chrome-headless-shell`
+  - playwright-core 不是项目依赖，不要加 `package.json`。找不到 playwright-core 时测试自动跳过；它自带的浏览器版本已安装时可以不设 `CHROMIUM`
+  - 服务不在 8766 端口时（或对线上重跑），用 `BASE=http://...` 指定
+  - `/api/*` 响应缓存在 `$TMPDIR/swiss-tax-compare-e2e/`（1 小时，键含 `api/index.py` 的哈希）：curve / history / compare 每次各调上游 17–26 次，连续跑几轮后上游会拒绝连接（`Connection refused`）一段时间。要强制重取就删掉这个目录
+  - 等待用 `lib.mjs` 的 `settle()`（状态徽章进入 loading 再离开），**不要用** `waitForLoadState("networkidle")`，它在页面曾经 idle 过之后会立即返回
+  - 截图检查：`openApp({ phone: true })` 得到 390px 手机视口，再 `page.screenshot()`
 - 线上：Vercel，路由见 `vercel.json`（`/api/*` → `api/index.py`，其余 → `static/`）
 
 ## 上游接口（已验证，2026-10）
