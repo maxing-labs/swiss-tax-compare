@@ -397,6 +397,30 @@ select {
   }
 }
 
+/* Phones: the status badge shrinks to a dot in its colour; the text stays in the DOM for screen readers.
+   The title wraps rather than run under the buttons on the narrowest screens. */
+@media (max-width: 640px) {
+  .brand h1 {
+    white-space: normal;
+  }
+  .status-pill {
+    inline-size: 0.6rem;
+    block-size: 0.6rem;
+    padding: 0;
+    border-radius: 50%;
+    background: currentColor;
+    overflow: hidden;
+    text-indent: 100%;
+  }
+}
+
+/* 360px phones: keep the title on one line */
+@media (max-width: 380px) {
+  .brand h1 {
+    font-size: 0.88rem;
+  }
+}
+
 .pf-field {
   display: flex;
   flex-direction: column;
