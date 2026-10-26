@@ -6,10 +6,11 @@ P1 收尾（2026-10-26，见 `261026-session-p1-e2e-mobile-chart-aria.md`）：`
 修补（2026-10-26，见 `261026-session-header-upstream-errors-chart-titles.md`）：手机 header 徽章改圆点、上游连接错误 502 / 超时 504、图表标题占位文本进词典，已上线。
 修补（2026-10-26）之后：05 Tax Savings（3a / BVG 补缴省税，见 `261026-session-tax-savings.md`），已上线。
 P1 复核（2026-10-26，见 `261026-session-p1-revalidation.md`）：确认四项已有实现及提交；后端 30、前端 15、本地与线上 P1 e2e 各 13 项通过，桌面 / 手机截图检查，修正 README 的过期计划并重新部署。四项 P1 无待实现项。
+手机输入区（2026-10-26，见 `261026-session-mobile-inputs-header.md`）：输入区展开时 header 不再吸顶、收起后吸顶并加阴影，已上线。
 
 ## 下一轮就做
 
-1. **手机 sticky header 太高**：输入区展开时整个 header（含表单和页签）高 544px，视口 844px，滚动时一直钉在顶部，内容只剩约 300px；可在手机上只让 header-top + 页签 sticky，或默认折叠输入区（折叠后 154px）。合并了 P2 原来的「输入区很高」一条
+1. **手机概览页卡片溢出**：390px 下 01 页签的 "Where it goes" 等 `.chart-card` 宽约 468px，右侧被裁掉（"Total" 列和卡片右边框看不到）；v1 起就有。查 `overview-layout` 在窄屏下的网格 / `min-width`
 2. **请求失败时的旧数字**：概览页在请求失败后仍显示上一次成功的结果，输入框却已是新值，只有徽章 / toast 提示；可把 KPI 置灰或标「未更新」
 3. **清理 v1 未使用代码**：`isCouple`、`saveActiveStateDebounced` 的导入，`fmtPct` 导入，`errInvalidYob` / `secWealth` / `legendWealth`（删 key 时三份词典同时删）
 
