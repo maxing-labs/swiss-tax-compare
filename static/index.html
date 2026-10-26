@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Swiss Tax Compare: income and wealth tax for every Swiss municipality from the official FTA (ESTV) calculator. Compare places, see effective and marginal rates, the income curve and the 2010–2026 history.">
+  <title>Swiss Tax Compare — Income & Wealth Tax Calculator (2026)</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231c1917'/%3E%3Cpath d='M13 6h6v7h7v6h-7v7h-6v-7H6v-6h7z' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preload" href="fonts/fraunces-500-800-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/ibm-plex-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="swiss-header">
+    <div class="header-top">
+      <div class="brand">
+        <span class="swiss-cross" aria-hidden="true">✚</span>
+        <div class="brand-titles">
+          <h1 data-i18n="appTitle">SWISS TAX COMPARE</h1>
+          <span class="brand-meta" data-i18n="appSubtitle">Official FTA (ESTV) tax calculator · live data</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <span class="status-pill" id="status-badge" data-i18n="statusReady">Data loaded</span>
+        <button type="button" class="btn-about" id="btn-about" aria-haspopup="dialog" aria-controls="about-dialog">
+          <span class="about-i" aria-hidden="true">i</span>
+          <span class="about-label" data-i18n="btnAbout">About</span>
+        </button>
+        <div class="lang-switch" role="group" aria-label="Language">
+          <button type="button" class="lang-btn active" data-lang="en">EN</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="profile-bar" aria-label="Inputs">
+      <div class="profile-chips-row">
+        <span class="bar-label" data-i18n="lblInputs">Your household</span>
+        <button type="button" class="btn-mobile-collapse" id="btn-toggle-filters" aria-expanded="true">
+          <span id="mobile-filter-summary">Hide Inputs ▲</span>
+        </button>
+      </div>
+
+      <form id="query-form" class="tax-form mode-gross" novalidate>
+        <div class="form-row form-row-household">
+          <div class="pf-field pf-loc">
+            <label for="location-search" data-i18n="lblLocation">PLZ / Municipality</label>
+            <div class="autocomplete-wrap">
+              <input type="text" id="location-search" data-i18n-placeholder="locPlaceholder" placeholder="8001 Zürich, Genève, Zug..." autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="location-dropdown" required>
+              <ul id="location-dropdown" class="dropdown-list hidden" role="listbox"></ul>
+            </div>
+          </div>
+
+          <div class="pf-field pf-year">
+            <label for="year-select" data-i18n="lblYear">Tax Year</label>
+            <select id="year-select"></select>
+          </div>
+
+          <div class="pf-field pf-status">
+            <label for="status-select" data-i18n="lblStatus">Civil Status</label>
+            <select id="status-select">
+              <option value="1" data-i18n="statusSingle">Single</option>
+              <option value="2" data-i18n="statusMarried">Married</option>
+              <option value="4" data-i18n="statusPartnership">Registered partnership</option>
+              <option value="3" data-i18n="statusConcubinage">Cohabiting (unmarried)</option>
+            </select>
+          </div>
+
+          <div class="pf-field pf-kids">
+            <label for="kids-input" data-i18n="lblKids">Children (ages)</label>
+            <input type="text" id="kids-input" inputmode="numeric" data-i18n-placeholder="kidsPlaceholder" placeholder="none · e.g. 4, 9" autocomplete="off">
+          </div>
+
+          <div class="pf-field pf-wealth">
+            <label for="wealth-input" data-i18n="lblWealth">Net Wealth</label>
+            <div class="input-chf">
+              <span class="chf-prefix" aria-hidden="true">CHF</span>
+              <input type="number" id="wealth-input" min="0" step="10000" value="0">
+            </div>
+          </div>
+
+          <div class="pf-field pf-mode">
+            <label data-i18n="lblMode">Income Input</label>
+            <div class="seg-mini">
+              <label><input type="radio" name="mode" value="gross" checked><span data-i18n="modeGross">Gross income</span></label>
+              <label><input type="radio" name="mode" value="taxable"><span data-i18n="modeTaxable">Taxable income</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row form-row-person" id="person1-row">
+          <span class="person-kicker" data-i18n="lblPerson1">Person 1</span>
+
+          <div class="pf-field pf-type gross-only">
+            <label for="type1-select" data-i18n="lblIncomeType">Income Type</label>
+            <select id="type1-select">
+              <option value="1" data-i18n="typeEmployed">Gross salary (employed)</option>
+              <option value="2" data-i18n="typeSelf">Self-employed (net)</option>
+              <option value="3" data-i18n="typePension">Pension</option>
+              <option value="4" data-i18n="typeOther">Other income</option>
+              <option value="0" data-i18n="typeNone">No income</option>
+            </select>
+          </div>
+
+          <div class="pf-field pf-income gross-only">
+            <label for="inc1-input" data-i18n="lblIncome">Annual Income</label>
+            <div class="input-chf">
+              <span class="chf-prefix" aria-hidden="true">CHF</span>
+              <input type="number" id="inc1-input" min="0" step="1000" value="100000">
+            </div>
+          </div>
+
+          <div class="pf-field pf-income taxable-only">
+            <label for="taxable-input" data-i18n="lblTaxable">Taxable Income (canton & federal)</label>
+            <div class="input-chf">
+              <span class="chf-prefix" aria-hidden="true">CHF</span>
+              <input type="number" id="taxable-input" min="0" step="1000" value="100000">
+            </div>
+          </div>
+
+          <div class="pf-field pf-yob gross-only">
+            <label for="yob1-input" data-i18n="lblYob">Birth Year</label>
+            <input type="number" id="yob1-input" min="1900" max="2026" step="1" value="1990">
+          </div>
+
+          <div class="pf-field pf-conf">
+            <label for="conf1-select" data-i18n="lblConfession">Church</label>
+            <select id="conf1-select">
+              <option value="4" data-i18n="confNone">None</option>
+              <option value="1" data-i18n="confReformed">Reformed</option>
+              <option value="2" data-i18n="confCatholic">Roman Catholic</option>
+              <option value="3" data-i18n="confChristCatholic">Christ Catholic</option>
+              <option value="5" data-i18n="confOther">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row form-row-person couple-only" id="person2-row">
+          <span class="person-kicker" data-i18n="lblPerson2">Person 2</span>
+
+          <div class="pf-field pf-type gross-only">
+            <label for="type2-select" data-i18n="lblIncomeType">Income Type</label>
+            <select id="type2-select">
+              <option value="1" data-i18n="typeEmployed">Gross salary (employed)</option>
+              <option value="2" data-i18n="typeSelf">Self-employed (net)</option>
+              <option value="3" data-i18n="typePension">Pension</option>
+              <option value="4" data-i18n="typeOther">Other income</option>
+              <option value="0" data-i18n="typeNone">No income</option>
+            </select>
+          </div>
+
+          <div class="pf-field pf-income gross-only">
+            <label for="inc2-input" data-i18n="lblIncome">Annual Income</label>
+            <div class="input-chf">
+              <span class="chf-prefix" aria-hidden="true">CHF</span>
+              <input type="number" id="inc2-input" min="0" step="1000" value="0">
+            </div>
+          </div>
+
+          <div class="pf-field pf-yob gross-only">
+            <label for="yob2-input" data-i18n="lblYob">Birth Year</label>
+            <input type="number" id="yob2-input" min="1900" max="2026" step="1" value="1990">
+          </div>
+
+          <div class="pf-field pf-conf">
+            <label for="conf2-select" data-i18n="lblConfession">Church</label>
+            <select id="conf2-select">
+              <option value="4" data-i18n="confNone">None</option>
+              <option value="1" data-i18n="confReformed">Reformed</option>
+              <option value="2" data-i18n="confCatholic">Roman Catholic</option>
+              <option value="3" data-i18n="confChristCatholic">Christ Catholic</option>
+              <option value="5" data-i18n="confOther">Other</option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <nav class="primary-nav" aria-label="Primary Views">
+      <ul class="nav-tabs" role="tablist">
+        <li class="active" role="presentation">
+          <button type="button" role="tab" aria-selected="true" data-tab="overview"><span class="tab-num">01</span><span data-i18n="tabOverview">Your Tax</span></button>
+        </li>
+        <li role="presentation">
+          <button type="button" role="tab" aria-selected="false" data-tab="compare"><span class="tab-num">02</span><span data-i18n="tabCompare">Compare Places</span></button>
+        </li>
+        <li role="presentation">
+          <button type="button" role="tab" aria-selected="false" data-tab="guide"><span class="tab-num">03</span><span data-i18n="tabGuide">Tax Guide</span></button>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="swiss-main">
+    <section class="view-section active" id="view-overview" role="tabpanel">
+      <div class="kpi-grid">
+        <div class="kpi-cell">
+          <span class="kpi-label" data-i18n="kpiTotal">Total Tax</span>
+          <strong class="kpi-num" id="kpi-total">—</strong>
+          <span class="kpi-meta" id="kpi-total-sub">—</span>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label" data-i18n="kpiEffective">Effective Rate</span>
+          <strong class="kpi-num text-accent" id="kpi-effective">—</strong>
+          <span class="kpi-meta" id="kpi-effective-sub">—</span>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label" data-i18n="kpiMarginal">Marginal Rate</span>
+          <strong class="kpi-num" id="kpi-marginal">—</strong>
+          <span class="kpi-meta" data-i18n="kpiMarginalSub">tax on the next CHF 100 of income</span>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label" data-i18n="kpiMonthly">Per Month</span>
+          <strong class="kpi-num" id="kpi-monthly">—</strong>
+          <span class="kpi-meta" data-i18n="kpiMonthlySub">set this aside every month</span>
+        </div>
+      </div>
+
+      <div class="overview-layout">
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <h2 data-i18n="secBreakdown">Where it goes</h2>
+              <p class="chart-sub" data-i18n="breakdownHint">Federal, cantonal, municipal and church tax on income and wealth, plus the personal tax some cantons levy.</p>
+            </div>
+          </div>
+          <div class="breakdown-bar" id="breakdown-bar" role="img" aria-label="Tax breakdown by level"></div>
+          <div class="chart-legend" id="breakdown-legend"></div>
+          <div class="table-wrapper table-wrapper-flat">
+            <table id="breakdown-table">
+              <caption class="sr-only">Tax breakdown by level</caption>
+              <thead id="breakdown-thead"></thead>
+              <tbody id="breakdown-tbody"></tbody>
+            </table>
+          </div>
+          <p class="section-note" id="wealth-note"></p>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <div>
+              <h2 id="waterfall-title" data-i18n="secWaterfall">From gross to taxable income</h2>
+              <p class="chart-sub" id="waterfall-hint" data-i18n="waterfallHint">Standard deductions as applied by the FTA calculator. Your own deductions (pillar 3a, commuting, childcare...) are not included, so your actual tax is usually a little lower.</p>
+            </div>
+          </div>
+          <div class="table-wrapper table-wrapper-flat">
+            <table id="waterfall-table" class="wf-table">
+              <caption class="sr-only">From gross income to taxable income</caption>
+              <tbody id="waterfall-tbody"></tbody>
+            </table>
+          </div>
+          <details class="deductions-details" id="deductions-details">
+            <summary data-i18n="secDeductions">Deductions applied (federal / cantonal)</summary>
+            <div class="table-wrapper table-wrapper-flat">
+              <table id="deductions-table">
+                <caption class="sr-only">Deductions applied</caption>
+                <thead id="deductions-thead"></thead>
+                <tbody id="deductions-tbody"></tbody>
+              </table>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section class="view-section hidden" id="view-compare" role="tabpanel">
+      <div class="toolbar-row">
+        <div class="toolbar-left">
+          <div class="seg-mini" id="scope-seg">
+            <label><input type="radio" name="scope" value="all" checked><span data-i18n="scopeAll">All municipalities</span></label>
+            <label><input type="radio" name="scope" value="capitals"><span data-i18n="scopeCapitals">Cantonal capitals</span></label>
+            <label><input type="radio" name="scope" value="canton"><span data-i18n="scopeCanton">One canton</span></label>
+          </div>
+          <select id="canton-select" aria-label="Canton" class="hidden"></select>
+          <div class="search-wrap">
+            <input type="search" id="compare-filter" data-i18n-placeholder="compareSearchPlaceholder" placeholder="Filter place or canton (e.g. Zug, VD)..." aria-label="Filter places">
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <select id="compare-sort" aria-label="Sort order">
+            <option value="totalAsc" data-i18n="sortTotalAsc">Sort: Lowest tax</option>
+            <option value="totalDesc" data-i18n="sortTotalDesc">Sort: Highest tax</option>
+            <option value="name" data-i18n="sortName">Sort: Name</option>
+          </select>
+          <button type="button" class="btn-export-csv" id="btn-export-csv" data-i18n="btnExportCsv">⬇ Export CSV</button>
+        </div>
+      </div>
+      <p class="section-note hidden" id="scope-note" data-i18n="scopeTaxableNote">With taxable income entered, only the 26 cantonal capitals can be compared. Switch to gross income for every municipality.</p>
+
+      <div class="kpi-grid kpi-grid-compact">
+        <div class="kpi-cell">
+          <span class="kpi-label" data-i18n="kpiCheapestPlace">Lowest tax</span>
+          <strong class="kpi-num" id="kpi-cheapest">—</strong>
+          <span class="kpi-meta" id="kpi-cheapest-sub">—</span>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label" data-i18n="kpiYourRank">Your place ranks</span>
+          <strong class="kpi-num" id="kpi-rank">—</strong>
+          <span class="kpi-meta" id="kpi-rank-sub">—</span>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label" data-i18n="kpiMaxSaving">Max. saving vs. yours</span>
+          <strong class="kpi-num text-accent" id="kpi-saving">—</strong>
+          <span class="kpi-meta" id="kpi-saving-sub">—</span>
+        </div>
+        <div class="kpi-cell">
+          <span class="kpi-label" data-i18n="kpiMedian">Median</span>
+          <strong class="kpi-num" id="kpi-median">—</strong>
+          <span class="kpi-meta" data-i18n="kpiMedianSub">half of the places are below this</span>
+        </div>
+      </div>
+
+      <div class="chart-card compare-chart-card">
+        <div class="chart-header">
+          <div>
+            <h2 id="compare-chart-title">Total tax by place</h2>
+            <p class="chart-sub" data-i18n="compareChartSub">Same household, same income and wealth, same tax year. Your place is highlighted.</p>
+          </div>
+        </div>
+        <div class="svg-chart-wrap">
+          <svg id="compare-svg" viewBox="0 0 820 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Total tax by place"></svg>
+        </div>
+      </div>
+
+      <div tabindex="0" role="region" aria-labelledby="compare-caption" class="table-wrapper">
+        <table id="compare-table">
+          <caption id="compare-caption" class="sr-only">Total tax by place</caption>
+          <thead id="compare-thead"></thead>
+          <tbody id="compare-tbody"></tbody>
+        </table>
+      </div>
+      <div class="load-more-bar hidden" id="compare-load-more-wrap">
+        <button type="button" class="btn-load-more" id="btn-compare-load-more"></button>
+      </div>
+    </section>
+
+    <section class="view-section hidden" id="view-guide" role="tabpanel">
+      <div id="guide-dynamic-container"></div>
+    </section>
+  </main>
+
+  <footer class="swiss-footer">
+    <div class="footer-inner">
+      <div class="footer-col">
+        <strong>SWISS TAX COMPARE</strong> · <span data-i18n="footerDataSource">Powered by the Swiss Federal Tax Administration (FTA / ESTV) calculator</span>
+        <a href="https://swisstaxcalculator.estv.admin.ch" target="_blank" rel="noopener">swisstaxcalculator.estv.admin.ch ↗</a>
+      </div>
+      <div class="footer-col footer-muted" data-i18n="footerDisclaimer">
+        Estimates from the official calculator with standard deductions. Your tax assessment is authoritative. Independent project, not affiliated with the FTA.
+      </div>
+    </div>
+  </footer>
+
+  <dialog id="about-dialog" class="about-dialog" aria-labelledby="about-title">
+    <div class="about-inner">
+      <div class="about-head">
+        <h2 id="about-title" data-i18n="aboutTitle">About Swiss Tax Compare</h2>
+        <button type="button" class="about-close" id="btn-about-close" data-i18n-aria="aboutClose" aria-label="Close">✕</button>
+      </div>
+      <div class="about-body">
+        <section>
+          <h3 data-i18n="aboutDataH">Data source</h3>
+          <p data-i18n="aboutDataP">Every figure comes live from the tax calculator of the Swiss Federal Tax Administration (FTA / ESTV), the same engine behind swisstaxcalculator.estv.admin.ch. Tariffs and multipliers for 2010–2026 are covered for every municipality.</p>
+        </section>
+        <section>
+          <h3 data-i18n="aboutIndepH">Independent · No ads</h3>
+          <p data-i18n="aboutIndepP">No advertising, no affiliation with the FTA or any adviser, no tracking. Saved scenarios stay in your own browser and are never uploaded.</p>
+        </section>
+        <section>
+          <h3 data-i18n="aboutCalcH">How it is calculated</h3>
+          <p data-i18n="aboutCalcP">With gross income the FTA calculator deducts social contributions (AHV/IV/EO, ALV, NBU, BVG) and the standard professional and insurance deductions, then applies the federal, cantonal, municipal and church tariffs. With taxable income nothing is deducted. The effective rate is total tax divided by the income you entered; the marginal rate is the tax on the next franc.</p>
+        </section>
+        <section>
+          <h3 data-i18n="aboutDisclaimerH">For guidance only</h3>
+          <p data-i18n="aboutDisclaimerP">These are estimates: individual deductions, special tariffs and rounding differ. Your cantonal tax office's assessment is authoritative. Nothing here is tax advice.</p>
+        </section>
+      </div>
+      <div class="about-foot">
+        <a href="https://swisstaxcalculator.estv.admin.ch" target="_blank" rel="noopener">swisstaxcalculator.estv.admin.ch ↗</a>
+        <button type="button" class="btn-load-more" id="btn-about-ok" data-i18n="aboutClose">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
