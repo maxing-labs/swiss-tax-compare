@@ -285,13 +285,34 @@
     </section>
 
     <section class="view-section hidden" id="view-compare" role="tabpanel">
-      <div class="toolbar-row">
-        <div class="toolbar-left">
+      <div class="compare-mode-row">
+        <div class="seg-mini">
+          <label><input type="radio" name="scope" value="selected" checked><span data-i18n="scopeSelected">Selected places</span></label>
+        </div>
+        <details id="compare-rankings">
+          <summary data-i18n="compareRankings">Browse rankings</summary>
           <div class="seg-mini" id="scope-seg">
-            <label><input type="radio" name="scope" value="all" checked><span data-i18n="scopeAll">All municipalities</span></label>
+            <label><input type="radio" name="scope" value="all"><span data-i18n="scopeAll">All municipalities</span></label>
             <label><input type="radio" name="scope" value="capitals"><span data-i18n="scopeCapitals">Cantonal capitals</span></label>
             <label><input type="radio" name="scope" value="canton"><span data-i18n="scopeCanton">One canton</span></label>
           </div>
+          <p class="section-note hidden" id="scope-note" data-i18n="scopeTaxableNote">With taxable income entered, rankings cover only the 26 cantonal capitals. Selected places can still include any municipality.</p>
+        </details>
+      </div>
+      <div id="compare-selected-controls" class="compare-selected-controls">
+        <label for="compare-location-search" data-i18n="compareAddPlace">Add a place to compare</label>
+        <div class="autocomplete-wrap">
+          <input type="search" id="compare-location-search" data-i18n-placeholder="locPlaceholder" placeholder="8001 Zürich, Genève, Zug..." autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="compare-location-dropdown" aria-describedby="compare-selection-note">
+          <ul id="compare-location-dropdown" class="dropdown-list hidden" role="listbox"></ul>
+        </div>
+        <div id="compare-place-chips" class="compare-place-chips"></div>
+        <p class="section-note" id="compare-selection-note" role="status"></p>
+        <p class="section-note" id="compare-income-note"></p>
+        <p class="compare-request-status" id="compare-request-status" role="status"></p>
+        <button type="button" id="btn-compare-retry" class="btn-row-action hidden" data-i18n="compareRetry">Retry failed places</button>
+      </div>
+      <div class="toolbar-row hidden" id="compare-ranking-toolbar">
+        <div class="toolbar-left">
           <select id="canton-select" data-i18n-aria="lblCantonSelect" aria-label="Canton" class="hidden"></select>
           <div class="search-wrap">
             <input type="search" id="compare-filter" data-i18n-placeholder="compareSearchPlaceholder" placeholder="Filter place or canton (e.g. Zug, VD)..." data-i18n-aria="ariaCompareFilter" aria-label="Filter places">
@@ -306,9 +327,7 @@
           <button type="button" class="btn-export-csv" id="btn-export-csv" data-i18n="btnExportCsv">⬇ Export CSV</button>
         </div>
       </div>
-      <p class="section-note hidden" id="scope-note" data-i18n="scopeTaxableNote">With taxable income entered, only the 26 cantonal capitals can be compared. Switch to gross income for every municipality.</p>
-
-      <div class="kpi-grid kpi-grid-compact">
+      <div class="kpi-grid kpi-grid-compact" id="compare-ranking-kpis">
         <div class="kpi-cell">
           <span class="kpi-label" data-i18n="kpiCheapestPlace">Lowest tax</span>
           <strong class="kpi-num" id="kpi-cheapest">—</strong>

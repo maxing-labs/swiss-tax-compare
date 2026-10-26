@@ -1,6 +1,6 @@
 # Swiss Tax Compare
 
-Income and wealth tax for every Swiss municipality, from the official calculator of the Swiss Federal Tax Administration (FTA / ESTV): see where your money goes, and compare your place with all 2'110 municipalities for the same household.
+Income and wealth tax for every Swiss municipality, from the official calculator of the Swiss Federal Tax Administration (FTA / ESTV): see where your money goes, and compare a few chosen places for the same household, with rankings across all 2'110 municipalities also available.
 
 **Live:** https://swiss-tax-compare.vercel.app
 
@@ -10,7 +10,7 @@ Swiss Tax Compare is an independent hobby project and is not affiliated with the
 
 - Enter gross income (standard deductions applied by the FTA calculator) or taxable income, civil status, children, church, wealth and tax year (2010–2026).
 - **Your Tax:** total, effective and marginal rate, the split between federal, cantonal, municipal and church tax, and the path from gross to taxable income.
-- **Compare Places:** the same household in every municipality of Switzerland (or one canton, or the 26 capitals): ranking, difference to your place, chart, CSV export.
+- **Compare Places:** choose up to six municipalities, including your current place, and compare annual tax, effective rate, after-tax income and the difference to your place. Selected places stay in your browser and shareable URL. Rankings for all Switzerland, one canton or the 26 capitals, with CSV export, remain available.
 - **Income Curve:** effective and marginal tax rates by income, with your current income highlighted.
 - **History:** annual tax totals from 2010 to 2026 for the same household, with changes between years.
 - **Saved scenarios:** save, switch and compare household setups in your browser.

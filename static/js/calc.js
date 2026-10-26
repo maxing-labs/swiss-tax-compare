@@ -34,6 +34,16 @@ export function effectiveRate(total, base) {
   return (total / base) * 100;
 }
 
+// Match the overview: gross mode subtracts social/pension contributions before tax;
+// taxable mode can only show entered taxable income minus tax, not a salary estimate.
+export function afterTaxIncome(result, household) {
+  const couple = household.status === 2 || household.status === 4;
+  const net = household.mode === "gross"
+    ? (result.p1?.net || 0) + (couple ? result.p2?.net || 0 : 0)
+    : household.taxable;
+  return net - result.total;
+}
+
 // Rows with the difference to the user's own municipality (null if it is not in the list), sorted
 export function rankPlaces(rows, ownBfsId, sortBy = "totalAsc") {
   const own = rows.find(r => r.loc.bfsId === ownBfsId) || null;

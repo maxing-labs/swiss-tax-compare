@@ -35,7 +35,8 @@ export const state = {
   taxable: 100000,
   wealth: 0,
   // compare view
-  compareScope: "all",
+  compareScope: "selected",
+  comparePlaces: [], // additional places; the current location is always included
   compareCanton: 26,
   compareQuery: "",
   compareSort: "totalAsc",
@@ -49,6 +50,7 @@ export const state = {
   calc: null,
   calcInputs: null, // household snapshot `calc` was computed for
   compare: null,
+  selectedCompare: null,
   curve: null,
   history: null,
   savings: null,
@@ -87,7 +89,7 @@ const URL_KEYS = [
   ["year", "year"], ["status", "status"], ["kids", "kids"], ["conf1", "conf1"], ["conf2", "conf2"], ["mode", "mode"],
   ["inc1", "inc1"], ["type1", "type1"], ["inc2", "inc2"], ["type2", "type2"], ["yob1", "yob1"], ["yob2", "yob2"],
   ["taxable", "taxable"], ["wealth", "wealth"], ["scope", "compareScope"], ["canton", "compareCanton"],
-  ["p3a", "pillar3a"], ["bvg", "bvg"], ["tab", "activeTab"], ["lang", "lang"]
+  ["places", "comparePlaces"], ["p3a", "pillar3a"], ["bvg", "bvg"], ["tab", "activeTab"], ["lang", "lang"]
 ];
 
 export function saveActiveStateToStorageAndUrl() {
@@ -102,7 +104,7 @@ export function saveActiveStateToStorageAndUrl() {
     const params = new URLSearchParams();
     for (const [param, key] of URL_KEYS) {
       const v = state[key];
-      params.set(param, Array.isArray(v) ? v.join(",") : String(v ?? ""));
+      params.set(param, key === "comparePlaces" ? JSON.stringify(v) : Array.isArray(v) ? v.join(",") : String(v ?? ""));
     }
     window.history.replaceState(null, "", `${window.location.pathname}?${params.toString().replace(/%2C/g, ",")}`);
   } catch (e) {
@@ -125,6 +127,21 @@ export function householdSnapshot() {
 // Same calculation inputs, i.e. the same API query: fields hidden by the income mode or civil status do not count
 export function sameHousehold(a, b) {
   return householdParams(a).toString() === householdParams(b).toString();
+}
+
+export const MAX_COMPARE_PLACES = 6;
+
+// Postal codes can refer to the same municipality: BFS ID, rather than location ID, is the identity.
+export function selectedComparePlaces(s = state) {
+  const own = { id: s.locationId, name: s.locationName, bfsId: s.locationBfsId, canton: s.locationCanton };
+  const places = [own];
+  for (const p of s.comparePlaces || []) {
+    if (!p || !Number.isSafeInteger(p.id) || p.id <= 0 || !Number.isSafeInteger(p.bfsId) || p.bfsId <= 0 ||
+        typeof p.name !== "string" || !p.name.trim() || typeof p.canton !== "string") continue;
+    if (!places.some(l => l.bfsId === p.bfsId)) places.push({ id: p.id, name: p.name.slice(0, 120), bfsId: p.bfsId, canton: p.canton.slice(0, 2) });
+    if (places.length === MAX_COMPARE_PLACES) break;
+  }
+  return places;
 }
 
 // The saved scenario the inputs on screen belong to, if any
@@ -183,7 +200,13 @@ export function readSnapshot(src) {
   num("wealth", 0);
   num("pillar3a", 0);
   num("bvg", 0);
-  oneOf("compareScope", ["all", "capitals", "canton"]);
+  oneOf("compareScope", ["selected", "all", "capitals", "canton"]);
+  if (src.comparePlaces !== undefined) {
+    try {
+      const places = typeof src.comparePlaces === "string" ? JSON.parse(src.comparePlaces) : src.comparePlaces;
+      if (Array.isArray(places)) state.comparePlaces = selectedComparePlaces({ ...state, comparePlaces: places }).slice(1);
+    } catch { /* keep the valid selection if a shared URL is malformed */ }
+  }
   num("compareCanton", 1, 26);
   oneOf("activeTab", TABS);
   if (src.lang && I18N[src.lang]) state.lang = src.lang;
@@ -192,13 +215,21 @@ export function readSnapshot(src) {
 export function loadActiveState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_STATE);
-    if (raw) readSnapshot(JSON.parse(raw));
+    if (raw) {
+      const saved = JSON.parse(raw);
+      readSnapshot(saved);
+      // Old versions persisted "all" automatically. Migrate those visits to the new default.
+      if (!Object.hasOwn(saved, "comparePlaces")) state.compareScope = "selected";
+    }
   } catch (e) {
     // ignore
   }
   try {
     const params = new URLSearchParams(window.location.search);
     if ([...params.keys()].length) {
+      // A shared household must not inherit another visitor's local comparison places.
+      state.comparePlaces = [];
+      state.compareScope = "selected";
       const src = {};
       for (const [param, key] of URL_KEYS) if (params.has(param)) src[key] = params.get(param);
       readSnapshot(src);

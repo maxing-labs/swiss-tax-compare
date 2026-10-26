@@ -8,7 +8,10 @@ import {
   sameHousehold,
   findActiveScenario,
   persistScenarios,
-  readSnapshot
+  readSnapshot,
+  selectedComparePlaces,
+  MAX_COMPARE_PLACES,
+  isCouple
 } from "./state.js";
 import { scenarioSummary } from "./calc.js";
 import { showToast } from "./views/toast.js";
@@ -31,9 +34,10 @@ import { renderGuideTab } from "./views/guide.js";
 
 // One slot per request kind; each kind keeps its result in state[kind]
 const inflight = { calc: { seq: 0, ctrl: null }, compare: { seq: 0, ctrl: null }, curve: { seq: 0, ctrl: null },
-  history: { seq: 0, ctrl: null }, savings: { seq: 0, ctrl: null }, savingsRank: { seq: 0, ctrl: null } };
+  selectedCompare: { seq: 0, ctrl: null }, history: { seq: 0, ctrl: null }, savings: { seq: 0, ctrl: null }, savingsRank: { seq: 0, ctrl: null } };
 let loadingCount = 0;
 let lastFailed = false;
+let calculationRequest = null;
 
 function setBadge() {
   const badge = document.getElementById("status-badge");
@@ -66,7 +70,7 @@ async function load(kind, fetcher, onData) {
     lastFailed = false;
     onData(json);
   } catch (e) {
-    if (e.name === "AbortError") return;
+    if (e.name === "AbortError" || seq !== slot.seq) return;
     console.error(`${kind} failed:`, e);
     lastFailed = true;
     showToast(I18N[state.lang].toastLoadFailed);
@@ -91,7 +95,14 @@ export function fetchAndRenderCalculation() {
   saveActiveStateToStorageAndUrl();
   updateMobileCollapseLabel();
   const inputs = householdSnapshot();
-  return load("calc", (signal) => fetchCalculation(state, signal), (json) => {
+  return load("calc", (signal) => {
+    const promise = fetchCalculation(inputs, signal);
+    const request = { inputs, promise };
+    calculationRequest = request;
+    const clear = () => { if (calculationRequest === request) calculationRequest = null; };
+    promise.then(clear, clear);
+    return promise;
+  }, (json) => {
     state.calc = json;
     state.calcInputs = inputs;
     // a saved scenario for these inputs shows the latest figures
@@ -106,11 +117,63 @@ export function fetchAndRenderCalculation() {
 }
 
 export function fetchAndRenderCompare() {
+  if (state.compareScope === "selected") return fetchAndRenderSelectedCompare();
   return load("compare", (signal) => fetchCompare(state, signal), (json) => {
     state.compare = json;
     state.showAllCompareRows = false;
     renderCompare();
   });
+}
+
+// At most six /calculate calls, with a result/error per place. The overview's current-place call is shared.
+function fetchAndRenderSelectedCompare() {
+  const inputs = householdSnapshot();
+  const previous = state.selectedCompare;
+  const reusable = previous && sameHousehold({ ...previous.household, locationId: inputs.locationId }, inputs);
+  const data = {
+    household: { ...inputs, inc2: isCouple() ? inputs.inc2 : 0 },
+    rows: selectedComparePlaces().map(p => {
+      const cached = reusable && previous.rows.find(r => r.loc.id === p.id && r.status === "ready");
+      return cached || { loc: { id: p.id, bfsId: p.bfsId, city: p.name.replace(/^\d{4}\s+/, ""), canton: p.canton }, status: "loading" };
+    })
+  };
+  state.selectedCompare = data;
+  return load("selectedCompare", async (signal) => {
+    renderCompare();
+    await Promise.all(data.rows.map(async (row) => {
+      if (row.status === "ready") return;
+      const placeInputs = { ...inputs, locationId: row.loc.id };
+      try {
+        let json;
+        if (state.calc && state.calcInputs && sameHousehold(state.calcInputs, placeInputs)) json = state.calc;
+        else if (calculationRequest && sameHousehold(calculationRequest.inputs, placeInputs)) json = await calculationRequest.promise;
+        else json = await fetchCalculation(placeInputs, signal);
+        if (signal.aborted || state.selectedCompare !== data) return;
+        Object.assign(row, json.result, { loc: row.loc, status: "ready" });
+      } catch (e) {
+        if (signal.aborted || state.selectedCompare !== data) return;
+        row.status = "error";
+      }
+      if (state.compareScope === "selected") renderCompare();
+    }));
+    return data;
+  }, () => renderCompare());
+}
+
+export function addComparePlace(place) {
+  const places = selectedComparePlaces();
+  const dict = I18N[state.lang];
+  if (places.some(p => p.bfsId === place.bfsId)) return showToast(dict.compareDuplicate);
+  if (places.length >= MAX_COMPARE_PLACES) return showToast(dict.compareLimit);
+  state.comparePlaces = [...places.slice(1), place];
+  saveActiveStateToStorageAndUrl();
+  fetchAndRenderSelectedCompare();
+}
+
+export function removeComparePlace(bfsId) {
+  state.comparePlaces = state.comparePlaces.filter(p => p.bfsId !== bfsId);
+  saveActiveStateToStorageAndUrl();
+  fetchAndRenderSelectedCompare();
 }
 
 export function fetchAndRenderCurve() {
@@ -158,7 +221,8 @@ const LAZY_TABS = {
 
 function loadActiveTab() {
   const tab = LAZY_TABS[state.activeTab];
-  if (tab && !state[state.activeTab]) tab.fetch();
+  const dataKey = state.activeTab === "compare" && state.compareScope === "selected" ? "selectedCompare" : state.activeTab;
+  if (tab && !state[dataKey]) tab.fetch();
 }
 
 // Any household input changed: recalculate, and refresh the tab on screen (the others lazily)
@@ -174,6 +238,8 @@ export function onHouseholdChange({ locationOnly = false } = {}) {
     invalidate("compare");
     invalidate("savingsRank");
   }
+  invalidate("selectedCompare");
+  if (state.compareScope === "selected") renderCompare();
   invalidate("curve");
   invalidate("history");
   invalidate("savings");
@@ -184,6 +250,10 @@ export function onCompareViewChange() {
   state.showAllCompareRows = false;
   saveActiveStateToStorageAndUrl();
   renderCompare();
+  // Switching to rankings is the only path that asks for all municipalities.
+  if (state.compareScope === "selected") invalidate("compare");
+  else invalidate("selectedCompare");
+  loadActiveTab();
 }
 
 // Saves the inputs on screen, or updates the scenario they already belong to
@@ -224,6 +294,7 @@ export function setLocation({ id, name, bfsId, canton }) {
   state.locationName = name;
   state.locationBfsId = Number(bfsId);
   state.locationCanton = canton || "";
+  state.comparePlaces = selectedComparePlaces().slice(1);
   document.getElementById("location-search").value = name;
   onHouseholdChange({ locationOnly: true });
 }
@@ -241,7 +312,8 @@ export function switchTab(tabId) {
   });
   saveActiveStateToStorageAndUrl();
   // charts take the width of the visible tab: redraw what was rendered while hidden
-  if (LAZY_TABS[tabId] && state[tabId]) LAZY_TABS[tabId].render();
+  const dataKey = tabId === "compare" && state.compareScope === "selected" ? "selectedCompare" : tabId;
+  if (LAZY_TABS[tabId] && state[dataKey]) LAZY_TABS[tabId].render();
   else loadActiveTab();
 }
 
@@ -274,7 +346,7 @@ export function applyLanguage(lang) {
   saveActiveStateToStorageAndUrl();
   renderScenarios();
   if (state.calc) renderOverview();
-  if (state.compare) renderCompare();
+  renderCompare();
   if (state.curve) renderCurve();
   if (state.history) renderHistory();
   if (state.savings) renderSavings();

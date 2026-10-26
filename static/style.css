@@ -1524,6 +1524,96 @@ tr.row-total td {
 }
 
 /* ---- Compare ---- */
+.compare-mode-row {
+  display: flex;
+  align-items: start;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-block-end: 1rem;
+}
+
+#compare-rankings {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+#compare-rankings summary {
+  padding: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+#compare-rankings .seg-mini { flex-wrap: wrap; height: auto; min-block-size: 32px; }
+
+.compare-selected-controls {
+  margin-block-end: 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.compare-selected-controls > label {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.compare-selected-controls .autocomplete-wrap { max-inline-size: 480px; }
+
+.compare-place-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.compare-place-chip {
+  display: inline-flex;
+  align-items: center;
+  max-inline-size: 100%;
+  border: 1px solid var(--border-input);
+  border-radius: 999px;
+  background: var(--bg-surface);
+  padding-inline: 0.75rem 0.3rem;
+  min-block-size: 44px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.compare-place-chip > span:first-child { overflow-wrap: anywhere; }
+.compare-place-chip.is-current { border-color: var(--swiss-red); padding-inline-end: 0.75rem; }
+.compare-place-chip button {
+  flex-shrink: 0;
+  inline-size: 44px;
+  block-size: 44px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.compare-place-chip button:hover { color: var(--swiss-red); }
+.compare-request-status { font-size: 0.8rem; color: var(--text-secondary); }
+.compare-request-status:empty { display: none; }
+#btn-compare-retry { justify-self: start; min-block-size: 44px; }
+.lowest-badge {
+  display: inline-block;
+  margin-inline-start: 0.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  background: var(--green-bg);
+  color: var(--green-cell-text);
+}
+
+@media (max-width: 640px) {
+  .compare-mode-row { flex-direction: column; gap: 0.25rem; }
+  #compare-rankings { inline-size: 100%; }
+  #compare-location-search { min-block-size: 44px; }
+  #compare-table tbody th { white-space: normal; }
+}
+
 .toolbar-left {
   display: flex;
   align-items: center;

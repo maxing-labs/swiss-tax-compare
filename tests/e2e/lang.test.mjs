@@ -29,7 +29,7 @@ const englishLeftovers = (page, lang) => page.evaluate(async (lang) => {
 for (const lang of ["de", "zh"]) {
   test(`${lang}: every tab, the saved scenario cards and the About dialog are translated`, { skip }, async () => {
     // a couple with children and a saved scenario, so the second person, the chips and the cards are on screen
-    const page = await openApp({ query: `?tab=overview&lang=${lang}&status=2&inc2=60000&kids=4,9` });
+    const page = await openApp({ query: `?tab=overview&scope=all&lang=${lang}&status=2&inc2=60000&kids=4,9` });
     await page.click("#btn-save-scenario");
     for (const tab of ["compare", "curve", "history"]) await settle(page, () => clickTab(page, tab));
     await clickTab(page, "guide");
@@ -69,7 +69,7 @@ const loadedTitles = (page, lang) => page.evaluate(async (lang) => {
 }, lang);
 
 test("chart titles are translated before their tab first loads, and keep the place after a language switch", { skip }, async () => {
-  const page = await openApp({ query: `?tab=overview&lang=de&${ZURICH}` });
+  const page = await openApp({ query: `?tab=overview&scope=all&lang=de&${ZURICH}` });
   // each tab's request waits until its title has been read
   let gate = Promise.resolve();
   await page.route(/\/api\/(compare|curve|history)\?/, async (route) => { await gate; route.fallback().catch(() => {}); });

@@ -1,7 +1,7 @@
 import { I18N } from "../i18n/index.js";
 import { fmtChf, fmtPct, fmtSignedChf, esc } from "../format.js";
-import { filterPlaces, rankPlaces, rankOf, median, incomeBase, effectiveRate, wealthTaxOf } from "../calc.js";
-import { state } from "../state.js";
+import { filterPlaces, rankPlaces, rankOf, median, incomeBase, effectiveRate, wealthTaxOf, afterTaxIncome } from "../calc.js";
+import { state, selectedComparePlaces, MAX_COMPARE_PLACES } from "../state.js";
 import { CHART_THEME, chartWidth } from "./chart-theme.js";
 
 const DEFAULT_LIMIT = 50;
@@ -25,12 +25,28 @@ export function visiblePlaces() {
 
 export function renderCompare() {
   const dict = I18N[state.lang] || I18N.en;
-  const data = state.compare;
-  if (!data?.rows) return;
-  const capitalsOnly = data.scope === "capitals";
+  const selected = state.compareScope === "selected";
+  const capitalsOnly = !selected && state.mode === "taxable";
+  document.getElementById("compare-selected-controls").classList.toggle("hidden", !selected);
+  document.getElementById("compare-ranking-toolbar").classList.toggle("hidden", selected);
+  document.getElementById("compare-ranking-kpis").classList.toggle("hidden", selected);
   document.getElementById("scope-note").classList.toggle("hidden", !capitalsOnly);
   document.getElementById("scope-seg").classList.toggle("hidden", capitalsOnly);
   document.getElementById("canton-select").classList.toggle("hidden", capitalsOnly || state.compareScope !== "canton");
+  // Keep the secondary entry open while a ranking is active, including after refresh.
+  if (!selected) document.getElementById("compare-rankings").open = true;
+  document.querySelectorAll('input[name="scope"]').forEach(r => { r.checked = r.value === state.compareScope; });
+  if (selected) {
+    renderSelectedCompare(dict);
+    return;
+  }
+  const data = state.compare;
+  if (!data?.rows) {
+    renderChart([], null, dict);
+    renderTable([], 0, dict);
+    renderKpis([], null, dict);
+    return;
+  }
 
   const { list } = visiblePlaces();
   const own = list.find(r => r.isYou) || null;
@@ -39,6 +55,57 @@ export function renderCompare() {
   renderKpis(asc, own, dict);
   renderChart(asc, own, dict);
   renderTable(list, base, dict);
+}
+
+function renderSelectedCompare(dict) {
+  const places = selectedComparePlaces();
+  const full = places.length >= MAX_COMPARE_PLACES;
+  document.getElementById("compare-location-search").disabled = full;
+  if (full) {
+    document.getElementById("compare-location-dropdown").classList.add("hidden");
+    document.getElementById("compare-location-search").setAttribute("aria-expanded", "false");
+  }
+  document.getElementById("compare-place-chips").innerHTML = places.map((p, i) => `
+    <span class="compare-place-chip ${i === 0 ? "is-current" : ""}">
+      <span>${esc(p.name)} · ${esc(p.canton)}</span>
+      ${i === 0 ? `<span class="you-badge">${dict.yourPlaceBadge}</span>` : `<button type="button" data-remove-place="${p.bfsId}" aria-label="${esc(dict.compareRemove(p.name))}">×</button>`}
+    </span>`).join("");
+  setText("compare-selection-note", full ? dict.compareLimit : places.length < 2 ? dict.compareAddHint : dict.compareCount(places.length));
+  setText("compare-income-note", state.mode === "gross" ? dict.compareGrossNote : dict.compareTaxableNote);
+  const data = state.selectedCompare;
+  const rows = data?.rows || [];
+  const ready = rows.filter(r => r.status === "ready");
+  const pending = rows.filter(r => r.status === "loading").length;
+  const failed = rows.filter(r => r.status === "error").length;
+  setText("compare-request-status", pending ? dict.compareLoading(pending) : failed ? dict.compareFailed(failed) : "");
+  const retry = document.getElementById("btn-compare-retry");
+  retry.classList.toggle("hidden", !failed);
+  retry.disabled = pending > 0;
+  document.getElementById("compare-table").setAttribute("aria-busy", String(pending > 0));
+  const { list, own } = rankPlaces(ready, state.locationBfsId);
+  renderChart(list, own, dict);
+  setText("compare-chart-title", dict.compareChartPlaceholder);
+  document.getElementById("compare-load-more-wrap").classList.add("hidden");
+  const headers = [dict.thPlace, dict.compareAnnualTax, dict.thEffective, dict.compareAfterTax, dict.thDiff];
+  document.getElementById("compare-thead").innerHTML = `<tr>${headers.map((h, i) => `<th scope="col" class="${i ? "num-col" : ""}">${h}</th>`).join("")}</tr>`;
+  const cheapest = ready.length ? Math.min(...ready.map(r => r.total)) : null;
+  document.getElementById("compare-tbody").innerHTML = rows.map(r => {
+    const isYou = r.loc.bfsId === state.locationBfsId;
+    const isReady = r.status === "ready";
+    const lowest = isReady && r.total === cheapest;
+    const diff = isReady && own ? r.total - own.total : null;
+    const placeholder = r.status === "error" ? dict.comparePlaceFailed : dict.statusLoading;
+    const values = isReady ? [
+      `CHF ${fmtChf(r.total)}`,
+      fmtPct(effectiveRate(r.total, incomeBase(data.household))),
+      `CHF ${fmtChf(afterTaxIncome(r, data.household))}`,
+      diff === null ? "—" : fmtSignedChf(diff)
+    ] : [placeholder, "—", "—", "—"];
+    return `<tr class="${isYou ? "row-you" : ""}" data-place-status="${r.status}" data-place-bfs="${r.loc.bfsId}">
+      <th scope="row">${esc(r.loc.city)} · ${esc(r.loc.canton)}${isYou ? `<span class="you-badge">${dict.yourPlaceBadge}</span>` : ""}${lowest ? `<span class="lowest-badge">${failed || pending ? dict.compareLowestAvailable : dict.compareLowest}</span>` : ""}</th>
+      ${values.map((v, i) => `<td class="num-col ${i === 0 ? "highlight-col" : ""} ${i === 3 && diff !== null ? diff < 0 ? "diff-neg" : diff > 0 ? "diff-pos" : "" : ""}" data-label="${headers[i + 1]}">${v}</td>`).join("")}
+    </tr>`;
+  }).join("");
 }
 
 function renderKpis(asc, own, dict) {
@@ -67,7 +134,7 @@ function renderChart(asc, own, dict) {
   const svg = document.getElementById("compare-svg");
   const bars = asc.slice(0, CHART_BARS);
   if (own && !bars.some(r => r.isYou)) bars.push(own);
-  setText("compare-chart-title", dict.compareChartTitle(Math.min(CHART_BARS, asc.length)));
+  setText("compare-chart-title", asc.length ? dict.compareChartTitle(Math.min(CHART_BARS, asc.length)) : dict.compareChartPlaceholder);
   if (!bars.length) {
     svg.innerHTML = "";
     return;
@@ -107,6 +174,7 @@ function renderChart(asc, own, dict) {
 }
 
 function renderTable(list, base, dict) {
+  document.getElementById("compare-table").setAttribute("aria-busy", "false");
   const thead = document.getElementById("compare-thead");
   const tbody = document.getElementById("compare-tbody");
   const loadMoreWrap = document.getElementById("compare-load-more-wrap");

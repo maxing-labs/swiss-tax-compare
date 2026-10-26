@@ -8,6 +8,9 @@ import { syncFormControlsFromState, updateMobileCollapseLabel } from "./views/co
 import { renderCompare, exportCompareToCsv } from "./views/compare.js";
 import {
   loadMeta,
+  addComparePlace,
+  removeComparePlace,
+  fetchAndRenderCompare,
   fetchAndRenderCalculation,
   onHouseholdChange,
   onCompareViewChange,
@@ -20,37 +23,43 @@ import {
   deleteScenario
 } from "./controller.js";
 
-let kbLocationIdx = -1;
-let locSearchTimer = null;
-let locSearchCtrl = null;
-
 function dict() {
   return I18N[state.lang] || I18N.en;
 }
 
-function bindLocationSearch() {
-  const input = document.getElementById("location-search");
-  const dropdown = document.getElementById("location-dropdown");
+function bindLocationSearch(prefix, onSelect, resetValue) {
+  const input = document.getElementById(`${prefix}-search`);
+  const dropdown = document.getElementById(`${prefix}-dropdown`);
+  let kbLocationIdx = -1;
+  let locSearchTimer = null;
+  let locSearchCtrl = null;
+  let searchSeq = 0;
 
   const close = () => {
     dropdown.classList.add("hidden");
     input.setAttribute("aria-expanded", "false");
     kbLocationIdx = -1;
+    input.removeAttribute("aria-activedescendant");
+    clearTimeout(locSearchTimer);
+    locSearchCtrl?.abort();
+    searchSeq++;
   };
 
   const select = (li) => {
-    setLocation({ id: li.dataset.id, name: li.dataset.name, bfsId: li.dataset.bfs, canton: li.dataset.canton });
+    onSelect({ id: Number(li.dataset.id), name: li.dataset.name, bfsId: Number(li.dataset.bfs), canton: li.dataset.canton });
+    input.value = resetValue();
     close();
   };
 
-  const render = (locations, query) => {
+  const render = (locations, query, failed = false) => {
     kbLocationIdx = -1;
+    input.removeAttribute("aria-activedescendant");
     if (!locations.length) {
-      dropdown.innerHTML = `<li class="no-match">${query.trim().length < 2 ? dict().locationTyping : dict().noLocationMatch}</li>`;
+      dropdown.innerHTML = `<li class="no-match">${failed ? dict().locationSearchFailed : query.trim().length < 2 ? dict().locationTyping : dict().noLocationMatch}</li>`;
     } else {
       dropdown.innerHTML = locations.map((l, idx) => {
         const name = l.zip ? `${l.zip} ${l.city}` : l.city;
-        return `<li role="option" data-idx="${idx}" data-id="${l.id}" data-bfs="${l.bfsId}" data-canton="${esc(l.canton)}" data-name="${esc(name)}">${esc(name)} <span class="match-meta-inline">${esc(l.canton)}</span></li>`;
+        return `<li id="${prefix}-option-${idx}" role="option" aria-selected="false" data-idx="${idx}" data-id="${l.id}" data-bfs="${l.bfsId}" data-canton="${esc(l.canton)}" data-name="${esc(name)}">${esc(name)} <span class="match-meta-inline">${esc(l.canton)}</span></li>`;
       }).join("");
     }
     dropdown.classList.remove("hidden");
@@ -59,6 +68,8 @@ function bindLocationSearch() {
 
   input.addEventListener("input", () => {
     const q = input.value;
+    const seq = ++searchSeq;
+    const year = state.year;
     clearTimeout(locSearchTimer);
     if (locSearchCtrl) locSearchCtrl.abort();
     if (q.trim().length < 2) {
@@ -68,11 +79,11 @@ function bindLocationSearch() {
     locSearchTimer = setTimeout(async () => {
       locSearchCtrl = new AbortController();
       try {
-        const json = await fetchLocations(q.trim(), state.year, locSearchCtrl.signal);
-        if (input.value !== q) return;
+        const json = await fetchLocations(q.trim(), year, locSearchCtrl.signal);
+        if (seq !== searchSeq || input.value !== q || state.year !== year || input.disabled) return;
         render(json.locations || [], q);
       } catch (e) {
-        if (e.name !== "AbortError") render([], q);
+        if (e.name !== "AbortError" && seq === searchSeq && state.year === year) render([], q, true);
       }
     }, 250);
   });
@@ -86,21 +97,25 @@ function bindLocationSearch() {
       e.preventDefault();
       const step = e.key === "ArrowDown" ? 1 : -1;
       kbLocationIdx = (kbLocationIdx + step + items.length) % items.length;
-      items.forEach((el, i) => el.classList.toggle("kb-active", i === kbLocationIdx));
+      items.forEach((el, i) => {
+        el.classList.toggle("kb-active", i === kbLocationIdx);
+        el.setAttribute("aria-selected", String(i === kbLocationIdx));
+      });
+      input.setAttribute("aria-activedescendant", items[kbLocationIdx].id);
       items[kbLocationIdx].scrollIntoView({ block: "nearest" });
     } else if (e.key === "Enter") {
       e.preventDefault();
       if (!dropdown.classList.contains("hidden") && items.length) select(items[kbLocationIdx >= 0 ? kbLocationIdx : 0]);
     } else if (e.key === "Escape") {
       close();
-      input.value = state.locationName;
+      input.value = resetValue();
     }
   });
 
   input.addEventListener("blur", () => {
     setTimeout(() => {
       close();
-      input.value = state.locationName;
+      input.value = resetValue();
     }, 180);
   });
 
@@ -109,6 +124,11 @@ function bindLocationSearch() {
     if (!li) return;
     e.preventDefault();
     select(li);
+  });
+
+  document.getElementById("year-select").addEventListener("change", () => {
+    close();
+    input.value = resetValue();
   });
 }
 
@@ -204,7 +224,13 @@ function bindEvents() {
     if (!state.mobileFiltersCollapsed) window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  bindLocationSearch();
+  bindLocationSearch("location", setLocation, () => state.locationName);
+  bindLocationSearch("compare-location", addComparePlace, () => "");
+  document.getElementById("compare-place-chips").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-remove-place]");
+    if (btn) removeComparePlace(Number(btn.dataset.removePlace));
+  });
+  document.getElementById("btn-compare-retry").addEventListener("click", fetchAndRenderCompare);
 
   document.getElementById("year-select").addEventListener("change", (e) => {
     state.year = Number(e.target.value);
@@ -246,6 +272,7 @@ function bindEvents() {
   document.querySelectorAll('input[name="scope"]').forEach(radio => {
     radio.addEventListener("change", (e) => {
       state.compareScope = e.target.value;
+      if (state.compareScope === "selected") document.getElementById("compare-rankings").open = false;
       document.getElementById("canton-select").classList.toggle("hidden", state.compareScope !== "canton");
       onCompareViewChange();
     });
@@ -303,8 +330,9 @@ async function initApp() {
   if (state.year > (state.meta?.maxYear || state.year)) state.year = state.meta.maxYear;
   syncFormControlsFromState();
   applyLanguage(state.lang);
+  const calculation = fetchAndRenderCalculation();
   switchTab(state.activeTab);
-  await fetchAndRenderCalculation();
+  await calculation;
 }
 
 document.addEventListener("DOMContentLoaded", initApp);

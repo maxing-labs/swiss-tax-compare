@@ -19,7 +19,7 @@ const chart = (page) => page.evaluate(() => {
 });
 
 test("desktop: 20 bars plus the user's place, names beside the bars", { skip }, async () => {
-  const page = await openApp({ query: `?tab=compare&${ZURICH}` });
+  const page = await openApp({ query: `?tab=compare&scope=all&${ZURICH}` });
   const c = await chart(page);
   assert.equal(c.viewBoxWidth, Math.min(820, c.width));
   assert.equal(c.bars, 21);
@@ -28,7 +28,7 @@ test("desktop: 20 bars plus the user's place, names beside the bars", { skip }, 
 });
 
 test("phone: names above the bars; redrawn at the phone width after a change made while the tab was hidden", { skip }, async () => {
-  const page = await openApp({ query: `?tab=compare&${ZURICH}`, phone: true });
+  const page = await openApp({ query: `?tab=compare&scope=all&${ZURICH}`, phone: true });
   let c = await chart(page);
   assert.ok(c.width < 400, `phone width ${c.width}`);
   assert.equal(c.viewBoxWidth, c.width);

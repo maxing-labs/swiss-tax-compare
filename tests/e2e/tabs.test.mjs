@@ -15,7 +15,7 @@ const ZUG = { id: 630000000, name: "6300 Zug", bfsId: 1711, canton: "ZG" };
 test("lazy tabs fetch once when first shown and keep their data across tab switches", { skip }, async () => {
   const urls = { compare: [], curve: [], history: [] };
   const page = await openApp({
-    query: `?tab=overview&${ZURICH}`,
+    query: `?tab=overview&scope=all&${ZURICH}`,
     beforeGoto: (p) => { for (const k of Object.keys(urls)) urls[k] = recordRequests(p, k); }
   });
   assert.deepEqual([urls.compare.length, urls.curve.length, urls.history.length], [0, 0, 0]);
@@ -69,7 +69,7 @@ test("a location change while the curve tab is hidden: the tab refetches when sh
 test("an answer that arrives after the inputs changed is not shown", { skip }, async () => {
   let first = true;
   const page = await openApp({
-    query: `?tab=overview&${ZURICH}`,
+    query: `?tab=overview&scope=all&${ZURICH}`,
     beforeGoto: (p) => p.route("**/api/curve?*", async (r) => {
       if (first) { first = false; await delay(1500); }
       r.continue().catch(() => {});
