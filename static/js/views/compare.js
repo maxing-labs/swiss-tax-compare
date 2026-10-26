@@ -5,7 +5,7 @@ import { state } from "../state.js";
 import { CHART_THEME, chartWidth } from "./chart-theme.js";
 
 const DEFAULT_LIMIT = 50;
-const CHART_BARS = 20;
+export const CHART_BARS = 20;
 
 function setText(id, text) {
   document.getElementById(id).textContent = text;

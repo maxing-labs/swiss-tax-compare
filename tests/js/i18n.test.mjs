@@ -29,14 +29,15 @@ test("guide cards keep their category codes, which pick the badge colour", () =>
   }
 });
 
-test("index.html: every aria-label and table caption comes from the dictionary, with the en text as fallback", () => {
+test("index.html: every aria-label, table caption and chart title comes from the dictionary, with the en text as fallback", () => {
   const html = readFileSync(new URL("../../static/index.html", import.meta.url), "utf8");
   for (const tag of html.match(/<[a-z]+\b[^>]*\saria-label="[^"]*"[^>]*>/g)) {
     const key = tag.match(/data-i18n-aria="([^"]+)"/)?.[1];
     assert.ok(key, `no data-i18n-aria: ${tag}`);
     assert.equal(tag.match(/\saria-label="([^"]*)"/)[1], I18N.en[key], tag);
   }
-  for (const [tag, text] of html.matchAll(/<caption\b[^>]*>([^<]*)<\/caption>/g)) {
+  // chart titles show their placeholder until render() writes the title with the place
+  for (const [tag, text] of html.matchAll(/<(?:caption\b|h2 id="\w+-chart-title")[^>]*>([^<]*)<\/(?:caption|h2)>/g)) {
     const key = tag.match(/data-i18n="([^"]+)"/)?.[1];
     assert.ok(key, `no data-i18n: ${tag}`);
     assert.equal(text, I18N.en[key], tag);

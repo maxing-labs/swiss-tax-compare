@@ -1,7 +1,7 @@
 // German and Chinese: no English dictionary text left anywhere on the page, attributes included
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
-import { skip, openApp, close, settle, clickTab } from "./lib.mjs";
+import { skip, openApp, close, settle, clickTab, texts, ZURICH } from "./lib.mjs";
 
 after(close);
 
@@ -45,3 +45,56 @@ for (const lang of ["de", "zh"]) {
     assert.deepEqual(page.errors, []);
   });
 }
+
+const CHART_TABS = ["compare", "curve", "history"];
+const chartTitles = (page) => texts(page, CHART_TABS.map(tab => `#${tab}-chart-title`).join(", "));
+
+// The title each chart tab shows before its first load: the dictionary's placeholder
+const placeholders = (page, lang) => page.evaluate(async ([lang, tabs]) => {
+  const dict = (await import("/js/i18n/index.js")).I18N[lang];
+  return tabs.map(tab => dict[`${tab}ChartPlaceholder`]);
+}, [lang, CHART_TABS]);
+
+// The titles render() writes once the tabs have loaded, with the place
+const loadedTitles = (page, lang) => page.evaluate(async (lang) => {
+  const dict = (await import("/js/i18n/index.js")).I18N[lang];
+  const { state } = await import("/js/state.js");
+  const { visiblePlaces, CHART_BARS } = await import("/js/views/compare.js");
+  const years = state.history.points.map(p => p.year);
+  return [
+    dict.compareChartTitle(Math.min(CHART_BARS, visiblePlaces().list.length)),
+    dict.curveChartTitle(state.locationName),
+    dict.historyChartTitle(state.locationName, years[0], years.at(-1)),
+  ];
+}, lang);
+
+test("chart titles are translated before their tab first loads, and keep the place after a language switch", { skip }, async () => {
+  const page = await openApp({ query: `?tab=overview&lang=de&${ZURICH}` });
+  // each tab's request waits until its title has been read
+  let gate = Promise.resolve();
+  await page.route(/\/api\/(compare|curve|history)\?/, async (route) => { await gate; route.fallback().catch(() => {}); });
+  const shownWhileLoading = async (tab) => {
+    let release;
+    gate = new Promise((res) => { release = res; });
+    let title;
+    await settle(page, async () => {
+      await clickTab(page, tab);
+      title = (await chartTitles(page))[CHART_TABS.indexOf(tab)];
+      release();
+    });
+    return title;
+  };
+
+  const de = await placeholders(page, "de");
+  assert.equal(await shownWhileLoading("compare"), de[0]);
+  assert.equal(await shownWhileLoading("curve"), de[1]);
+  // switched before the history tab has loaded: its placeholder follows
+  await page.click('.lang-btn[data-lang="zh"]');
+  assert.equal(await shownWhileLoading("history"), (await placeholders(page, "zh"))[2]);
+
+  assert.deepEqual(await chartTitles(page), await loadedTitles(page, "zh"));
+  assert.match((await chartTitles(page))[1], /8001 Zürich/);
+  await page.click('.lang-btn[data-lang="de"]');
+  assert.deepEqual(await chartTitles(page), await loadedTitles(page, "de"));
+  assert.deepEqual(page.errors, []);
+});
