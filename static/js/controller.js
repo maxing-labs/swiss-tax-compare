@@ -41,10 +41,9 @@ async function load(kind, fetcher, onData) {
     lastFailed = true;
     showToast(I18N[state.lang].toastLoadFailed);
   } finally {
-    if (seq === slot.seq) {
-      loadingCount--;
-      setBadge();
-    }
+    // every call counted itself in, superseded ones included
+    loadingCount--;
+    setBadge();
   }
 }
 
