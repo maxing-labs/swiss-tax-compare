@@ -8,6 +8,8 @@ P1 收尾（2026-10-26，见 `261026-session-p1-e2e-mobile-chart-aria.md`）：`
 P1 复核（2026-10-26，见 `261026-session-p1-revalidation.md`）：确认四项已有实现及提交；后端 30、前端 15、本地与线上 P1 e2e 各 13 项通过，桌面 / 手机截图检查，修正 README 的过期计划并重新部署。四项 P1 无待实现项。
 手机输入区（2026-10-26，见 `261026-session-mobile-inputs-header.md`）：输入区展开时 header 不再吸顶、收起后吸顶并加阴影，已上线。
 
+自选地点比较（2026-10-26，见 `261026-session-selected-places.md`）：02 默认当前所在地 + 最多 5 个自选市镇，chips / 柱图 / 简表、gross / taxable、单点失败重试与旧请求保护、URL / 刷新保留、三语与手机卡片；只请求所选地点。`8741d25` / `da7b46f`，已上线；后端 30、JS 18、本地完整 e2e 32、最终线上相关 e2e 18 项通过，桌面 / 390px 截图检查完成。
+
 ## 下一轮就做
 
 1. **手机概览页卡片溢出**：390px 下 01 页签的 "Where it goes" 等 `.chart-card` 宽约 468px，右侧被裁掉（"Total" 列和卡片右边框看不到）；v1 起就有。查 `overview-layout` 在窄屏下的网格 / `min-width`
@@ -16,7 +18,7 @@ P1 复核（2026-10-26，见 `261026-session-p1-revalidation.md`）：确认四�
 
 ## P2
 
-- 比较页图表：范围为单个州时柱数可能到 160，目前只画最低 20 + 本地；考虑加「最高 N」或按州聚合（每州中位数）
+- 比较页排名图表：范围为单个州时柱数可能到 160，目前只画最低 20 + 本地；考虑加「最高 N」或按州聚合（每州中位数）
 - 比较页「Use」把某市镇设为所在地后，`locationName` 只有市镇名、没有邮编；可在 `/api/compare` 行里带 `ZipCode`（上游全州批量接口不返回邮编，需要再查一次 `API_searchLocation`）
 - 手机端：表格在 390px 下用卡片布局（compare 表已有，breakdown 表故意关掉了）
 - 上游重试：目前单个上游请求不重试（取舍见 `261026-session-header-upstream-errors-chart-titles.md`）；若生产日志里常见孤立的单次 502，再对连接错误加一次带退避的重试
