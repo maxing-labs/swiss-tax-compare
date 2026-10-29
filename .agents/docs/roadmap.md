@@ -35,4 +35,4 @@ P1 复核（2026-10-26，见 `261026-session-p1-revalidation.md`）：确认四�
 
 - 资本提取税、遗产税、法人税：上游有接口（`API_calculateManyCapitalTaxes` 等），但和本站「所得 + 财富」定位不同
 - 通用的自定义扣除项表单（上游 `Budget` 数组）：节税页已用它做 3a / BVG，但通用表单会很长；先看用户是否需要
-- GitHub 远程仓库：目前只有本地 git，与 swiss-insurance-compare 一样等用户决定
+- GitHub 远程仓库：已于 2026-10-29 公开至 https://github.com/maxing-labs/swiss-tax-compare（姊妹站为 https://github.com/maxing-labs/swiss-insurance-compare）
