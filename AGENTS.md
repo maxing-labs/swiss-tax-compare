@@ -1,6 +1,6 @@
 # Swiss Tax Compare
 
-瑞士所得税 / 财富税计算与比价站：把联邦税务管理局（ESTV / FTA）官方计算器 swisstaxcalculator.estv.admin.ch 的后端 JSON 接口代理成简单的 GET 接口，再由前端计算和展示。姊妹项目 `../priminfo-pro`（医保比价）的主题、分层和约定在这里沿用。部署在 Vercel：https://swiss-tax-compare.vercel.app
+瑞士所得税 / 财富税计算与比价站：把联邦税务管理局（ESTV / FTA）官方计算器 swisstaxcalculator.estv.admin.ch 的后端 JSON 接口代理成简单的 GET 接口，再由前端计算和展示。姊妹项目 `../swiss-insurance-compare`（医保比价）的主题、分层和约定在这里沿用。部署在 Vercel：https://swiss-tax-compare.vercel.app
 
 ## 运行
 
@@ -36,7 +36,7 @@
 - **两种收入口径**：`mode=gross`（默认，走 Detailed）和 `mode=taxable`（走 Simple，边际税率用 +1'000 CHF 的差分算）。比较页的**排名模式**在 taxable 下只能比 26 个州府（Simple 没有全州批量接口）；自选地点在两种口径下都支持任意市镇
 - **地点比较**：默认 `scope=selected`，当前所在地固定 + 最多 5 个额外市镇（BFS ID 去重）。`comparePlaces` 只保存额外地点，随 localStorage / URL 的 `places` JSON 保存；旧存储自动迁移到自选模式，显式旧 URL 的排名范围保留。自选只复用 `/api/calculate`，与概览共享所在地请求；结果逐点展示，失败可重试，取消 + 请求序号 / 结果对象身份防止旧请求覆盖。`selectedCompare` 与原 `compare` 排名结果分开；排名为次级入口，沿用 `/api/compare`。gross 税后收入 = 社保 / 养老金扣除后的净收入 − 总税额；taxable = 应税所得 − 总税额，文案注明并非到手工资。
 - **i18n**：用户可见文本放 `static/js/i18n/` 的 `en.js` / `de.js` / `zh.js`，`index.js` 导出 `I18N`。加或改 key 时三份同时改，`tests/js/i18n.test.mjs` 检查三份的 key、类型、函数参数个数和指南卡片一致。`index.html` 里的 aria-label 和表格 caption 也走词典（`data-i18n-aria` / `data-i18n`，HTML 里留 en 原文作回落），同一个测试会检查。德语用瑞士写法（ss，不用 ß），术语跟 ESTV 官方计算器一致；上游扣除明细只有 DE/FR/IT/EN，zh 回落到 en
-- **样式**：色板和字体 token 在 `static/style.css` 的 `:root`（与 priminfo-pro 相同的 Editorial Bold 主题）；SVG 图表颜色在 `static/js/views/chart-theme.js`；字体自托管在 `static/fonts/`
+- **样式**：色板和字体 token 在 `static/style.css` 的 `:root`（与 swiss-insurance-compare 相同的 Editorial Bold 主题）；SVG 图表颜色在 `static/js/views/chart-theme.js`；字体自托管在 `static/fonts/`
 - **CDN 缓存**：成功响应带 `s-maxage=3600`（locations / meta 为一天）。错误必须返回非 2xx 且不带缓存头：上游无结果抛 `EmptyResultError` → 502，上游连不上（`URLError`，如限流时的 `Connection refused`）→ 502，上游超时 → 504，参数错误抛 `BadRequestError` → 400；这些只记一行 warning，其余异常才是 500 并打印 traceback。单个上游请求不重试
 - **前端分层**：`main.js`（DOM 事件）→ `controller.js`（取数、状态、调度渲染）→ `views/*.js`（纯渲染）；`calc.js` 是无 DOM 的纯函数，有测试
 
