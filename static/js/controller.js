@@ -91,8 +91,8 @@ export async function loadMeta() {
   populateCantonSelect();
 }
 
-export function fetchAndRenderCalculation() {
-  saveActiveStateToStorageAndUrl();
+export function fetchAndRenderCalculation({ startup = false } = {}) {
+  saveActiveStateToStorageAndUrl({ startup });
   updateMobileCollapseLabel();
   const inputs = householdSnapshot();
   return load("calc", (signal) => {
@@ -299,7 +299,7 @@ export function setLocation({ id, name, bfsId, canton }) {
   onHouseholdChange({ locationOnly: true });
 }
 
-export function switchTab(tabId) {
+export function switchTab(tabId, { persist = true } = {}) {
   state.activeTab = tabId;
   document.querySelectorAll(".nav-tabs li").forEach(li => {
     const btn = li.querySelector("button");
@@ -310,14 +310,14 @@ export function switchTab(tabId) {
   TABS.forEach(id => {
     document.getElementById(`view-${id}`).classList.toggle("hidden", id !== tabId);
   });
-  saveActiveStateToStorageAndUrl();
+  if (persist) saveActiveStateToStorageAndUrl();
   // charts take the width of the visible tab: redraw what was rendered while hidden
   const dataKey = tabId === "compare" && state.compareScope === "selected" ? "selectedCompare" : tabId;
   if (LAZY_TABS[tabId] && state[dataKey]) LAZY_TABS[tabId].render();
   else loadActiveTab();
 }
 
-export function applyLanguage(lang) {
+export function applyLanguage(lang, { persist = true } = {}) {
   state.lang = I18N[lang] ? lang : "en";
   const dict = I18N[state.lang];
 
@@ -343,7 +343,7 @@ export function applyLanguage(lang) {
   renderGuideTab();
   updateMobileCollapseLabel();
   setBadge();
-  saveActiveStateToStorageAndUrl();
+  if (persist) saveActiveStateToStorageAndUrl();
   renderScenarios();
   if (state.calc) renderOverview();
   renderCompare();

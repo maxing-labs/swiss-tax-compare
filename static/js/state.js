@@ -3,6 +3,9 @@ import { householdParams } from "./api.js";
 
 const STORAGE_KEY_ACTIVE_STATE = "swiss_tax_compare_active_state_v1";
 const STORAGE_KEY_SCENARIOS = "swiss_tax_compare_scenarios_v1";
+const RELOAD_GUARD_KEY = "swiss_tax_compare_reload_guard_v1";
+const RELOAD_WINDOW_MS = 4000;
+const RELOAD_MAX_COUNT = 4;
 // What a scenario saves: every calculation input plus the location's display fields
 const SCENARIO_KEYS = [
   "locationId", "locationName", "locationBfsId", "locationCanton", "year", "status", "kids", "conf1", "conf2",
@@ -58,6 +61,21 @@ export const state = {
 };
 
 let saveStateTimer = null;
+let suppressStartupUrlRewrite = false;
+
+// Embedded WKWebView wrappers (e.g. SwiftUI updateNSView) can enter an infinite reload loop if startup
+// replaceState mutates a bare URL and the host reloads whenever webView.url != initialURL.
+function recordLoadAndCheckLoop(now = Date.now()) {
+  try {
+    const prev = JSON.parse(sessionStorage.getItem(RELOAD_GUARD_KEY) || "[]");
+    const recent = (Array.isArray(prev) ? prev : []).filter(t => Number.isFinite(t) && now - t < RELOAD_WINDOW_MS);
+    recent.push(now);
+    sessionStorage.setItem(RELOAD_GUARD_KEY, JSON.stringify(recent.slice(-RELOAD_MAX_COUNT)));
+    return recent.length >= RELOAD_MAX_COUNT;
+  } catch (e) {
+    return false;
+  }
+}
 
 export function isCouple(status = state.status) {
   return Number(status) === 2 || Number(status) === 4;
@@ -92,7 +110,7 @@ const URL_KEYS = [
   ["places", "comparePlaces"], ["p3a", "pillar3a"], ["bvg", "bvg"], ["tab", "activeTab"], ["lang", "lang"]
 ];
 
-export function saveActiveStateToStorageAndUrl() {
+export function saveActiveStateToStorageAndUrl({ startup = false } = {}) {
   const snapshot = {};
   for (const [, key] of URL_KEYS) snapshot[key] = state[key];
   try {
@@ -100,13 +118,19 @@ export function saveActiveStateToStorageAndUrl() {
   } catch (e) {
     // ignore storage errors
   }
+  if (startup && suppressStartupUrlRewrite) return;
   try {
     const params = new URLSearchParams();
     for (const [param, key] of URL_KEYS) {
       const v = state[key];
       params.set(param, key === "comparePlaces" ? JSON.stringify(v) : Array.isArray(v) ? v.join(",") : String(v ?? ""));
     }
-    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString().replace(/%2C/g, ",")}`);
+    const newUrl = `${window.location.pathname}?${params.toString().replace(/%2C/g, ",")}`;
+    // Skip no-op replaceState: WebKit/WKWebView still fires URL KVO observers even when newUrl === currentUrl
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (newUrl !== currentUrl) {
+      window.history.replaceState(null, "", newUrl);
+    }
   } catch (e) {
     // ignore history errors
   }
@@ -212,7 +236,8 @@ export function readSnapshot(src) {
   if (src.lang && I18N[src.lang]) state.lang = src.lang;
 }
 
-export function loadActiveState() {
+export function loadActiveState({ now } = {}) {
+  suppressStartupUrlRewrite = recordLoadAndCheckLoop(now);
   try {
     const raw = localStorage.getItem(STORAGE_KEY_ACTIVE_STATE);
     if (raw) {

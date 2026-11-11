@@ -59,3 +59,48 @@ test("after-tax income follows the overview for a single person, a couple and ta
   assert.equal(afterTaxIncome(result, { mode: "taxable", taxable: 100000 }), 88000);
   assert.equal(afterTaxIncome({ ...result, total: 0 }, { mode: "taxable", taxable: 0 }), 0);
 });
+
+test("saveActiveStateToStorageAndUrl: skips no-op replaceState and halts rapid startup reload loops", () => {
+  const original = { ...state };
+  const prevWindow = globalThis.window, prevLocal = globalThis.localStorage, prevSession = globalThis.sessionStorage;
+  const store = {}, session = {};
+  let calls = 0;
+  globalThis.localStorage = { getItem: k => store[k] ?? null, setItem: (k, v) => { store[k] = v; } };
+  globalThis.sessionStorage = { getItem: k => session[k] ?? null, setItem: (k, v) => { session[k] = v; } };
+  globalThis.window = {
+    location: { pathname: "/", search: "" },
+    history: {
+      replaceState: (_, __, url) => {
+        calls++;
+        const qIdx = url.indexOf("?");
+        globalThis.window.location.search = qIdx >= 0 ? url.slice(qIdx) : "";
+      }
+    }
+  };
+  try {
+    Object.assign(state, own);
+    loadActiveState({ now: 1000 });
+    saveActiveStateToStorageAndUrl({ startup: true });
+    assert.equal(calls, 1);
+    saveActiveStateToStorageAndUrl({ startup: true });
+    saveActiveStateToStorageAndUrl();
+    assert.equal(calls, 1);
+
+    for (const t of [1200, 1400, 1600]) {
+      globalThis.window.location.search = "";
+      loadActiveState({ now: t });
+      saveActiveStateToStorageAndUrl({ startup: true });
+    }
+    assert.equal(calls, 3);
+    assert.equal(globalThis.window.location.search, "");
+
+    saveActiveStateToStorageAndUrl();
+    assert.equal(calls, 4);
+    assert.match(globalThis.window.location.search, /loc=800100000/);
+  } finally {
+    Object.assign(state, original);
+    globalThis.window = prevWindow;
+    globalThis.localStorage = prevLocal;
+    globalThis.sessionStorage = prevSession;
+  }
+});

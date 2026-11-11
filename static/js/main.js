@@ -329,9 +329,9 @@ async function initApp() {
   await loadMeta();
   if (state.year > (state.meta?.maxYear || state.year)) state.year = state.meta.maxYear;
   syncFormControlsFromState();
-  applyLanguage(state.lang);
-  const calculation = fetchAndRenderCalculation();
-  switchTab(state.activeTab);
+  applyLanguage(state.lang, { persist: false });
+  const calculation = fetchAndRenderCalculation({ startup: true });
+  switchTab(state.activeTab, { persist: false });
   await calculation;
 }
 
