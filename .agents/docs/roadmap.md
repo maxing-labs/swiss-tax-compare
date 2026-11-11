@@ -9,6 +9,7 @@ P1 复核（2026-10-26，见 `261026-session-p1-revalidation.md`）：确认四�
 手机输入区（2026-10-26，见 `261026-session-mobile-inputs-header.md`）：输入区展开时 header 不再吸顶、收起后吸顶并加阴影，已上线。
 
 自选地点比较（2026-10-26，见 `261026-session-selected-places.md`）：02 默认当前所在地 + 最多 5 个自选市镇，chips / 柱图 / 简表、gross / taxable、单点失败重试与旧请求保护、URL / 刷新保留、三语与手机卡片；只请求所选地点。`8741d25` / `da7b46f`，已上线；后端 30、JS 18、本地完整 e2e 32、最终线上相关 e2e 18 项通过，桌面 / 390px 截图检查完成。
+防重载死循环与静态缓存头（2026-11-11，见 `261111-session-cdn-limit-fix.md`）：同步修复姊妹站暴露的首屏 `replaceState` 在嵌入式 `WKWebView` 下的重载死循环（幂等守卫 + 4 秒 4 次熔断）并为 `vercel.json` 补齐字体 / JS / CSS 浏览器缓存头，`61d3423`（本地已提交，待确认部署）。
 
 ## 下一轮就做
 
