@@ -426,15 +426,37 @@ def fetch_budget(h: dict, loc_id: int) -> list:
     return budget
 
 
-def calc_savings(h: dict, p3a: int, bvg: int, capitals: bool = False) -> dict:
+def parse_cantons(raw: str) -> list:
+    if not raw or not raw.strip():
+        return CANTONS
+    valid = {cid for cid, _, _, _ in CANTONS}
+    wanted = set()
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            cid = int(part)
+        except ValueError:
+            raise BadRequestError("cantons must be a comma-separated list of canton ids")
+        if cid not in valid:
+            raise BadRequestError(f"unknown canton id: {cid}")
+        wanted.add(cid)
+    if not wanted:
+        raise BadRequestError("cantons must not be empty")
+    return [c for c in CANTONS if c[0] in wanted]
+
+
+def calc_savings(h: dict, p3a: int, bvg: int, capitals: bool = False, cantons: list = None) -> dict:
     budget = fetch_budget(h, h["loc"]) if h["mode"] == "gross" else None
     out = {"pillar3a": p3a, "bvg": bvg, "caps": pillar3a_caps(h["year"]),
            "method": "budget" if h["mode"] == "gross" else "taxable"}
     if not capitals:
         return dict(out, **calc_savings_at(h, h["loc"], p3a, bvg, budget))
-    # 26 capitals x 3 tiers: few parallel upstream requests, it refuses connections when hit too hard
+    # Up to 26 capitals x 3 tiers: few parallel upstream requests, it refuses connections when hit too hard
+    targets = CANTONS if cantons is None else cantons
     with ThreadPoolExecutor(max_workers=8) as ex:
-        results = list(ex.map(lambda c: calc_savings_at(h, c[3], p3a, bvg, budget), CANTONS))
+        results = list(ex.map(lambda c: calc_savings_at(h, c[3], p3a, bvg, budget), targets))
     rows = []
     for r in results:
         loc = r["loc"]
@@ -533,7 +555,8 @@ def handle_api_request(path: str, qs: dict) -> dict:
         p3a = _int(qs, "pillar3a", caps["withPension"], 0, 1_000_000)
         bvg = _int(qs, "bvg", 0, 0, 100_000_000)
         capitals = qs.get("scope", ["place"])[0] == "capitals"
-        return dict(calc_savings(h, p3a, bvg, capitals), household=h)
+        cantons = parse_cantons(qs.get("cantons", [""])[0]) if capitals else None
+        return dict(calc_savings(h, p3a, bvg, capitals, cantons), household=h)
     raise NotFoundError(f"Unknown API endpoint: {path}")
 
 

@@ -4,7 +4,7 @@
 
 基于瑞士联邦税务管理局（ESTV / FTA）官方计算器接口，查询与对比全瑞士 2'110 个市镇的所得税与财富税：看清每一分税款的去向、横向比较不同居住地的税后收入，并估算第三支柱（3a）与养老金（BVG）补缴的节税额。
 
-**线上地址：** https://swiss-tax-compare.vercel.app · **姊妹项目：** [Swiss Insurance Compare（瑞士基础医保比价）](https://swiss-insurance-compare.vercel.app)（[GitHub](https://github.com/maxing-labs/swiss-insurance-compare)）
+**线上地址：** https://swiss-tax-compare.pages.dev（备用镜像：https://swiss-tax-compare.vercel.app）· **姊妹项目：** [Swiss Insurance Compare（瑞士基础医保比价）](https://swiss-insurance-compare.pages.dev)（[GitHub](https://github.com/maxing-labs/swiss-insurance-compare)）
 
 ![Swiss Tax Compare — 税负构成与毛收入到应税所得扣除路径](docs/screenshot.png)
 
@@ -35,11 +35,11 @@ python3 -m unittest                # 后端离线单元测试（使用 tests/fix
 node --test 'tests/js/*.test.mjs'  # 前端单元测试（需 Node >= 22）
 ```
 
-生产环境部署于 Vercel，由 `vercel.json` 将 `/api/*` 路由至 `api/index.py`、其余静态资源路由至 `static/`。
+生产环境无服务器部署于 Cloudflare Pages（`functions/api/[[path]].js` + `static/_headers`）与 Vercel（`vercel.json` 将 `/api/*` 路由至 `api/index.py`、其余静态资源路由至 `static/`）。
 
 ## 协作方式：由 Coding Agents 构建
 
-与姊妹项目 [Swiss Insurance Compare](https://github.com/maxing-labs/swiss-insurance-compare)（[线上](https://swiss-insurance-compare.vercel.app)，瑞士医保比价）一样，本仓库迄今为止的每一次提交均由 AI 编程代理完成。[`AGENTS.md`](AGENTS.md) 是每个 Agent 首先阅读的项目规范，[`.agents/docs/`](.agents/docs/) 存放每次会话的工作记录与路线图。
+与姊妹项目 [Swiss Insurance Compare](https://github.com/maxing-labs/swiss-insurance-compare)（[线上](https://swiss-insurance-compare.pages.dev)，瑞士医保比价）一样，本仓库迄今为止的每一次提交均由 AI 编程代理完成。[`AGENTS.md`](AGENTS.md) 是每个 Agent 首先阅读的项目规范，[`.agents/docs/`](.agents/docs/) 存放每次会话的工作记录与路线图。
 
 ## 许可证
 

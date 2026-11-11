@@ -28,9 +28,9 @@ test("a BVG amount reloads both parts; a location change keeps the ranking", { s
   const urls = recordRequests(page, "savings");
   await settle(page, () => setInput(page, "#savings-bvg-input", 20000));
   await rankRows(page);
-  assert.equal(urls.length, 2);
+  assert.equal(urls.length, 3);
   assert.ok(urls.every(u => u.includes("bvg=20000")));
-  assert.ok(urls[1].includes("scope=capitals"));
+  assert.equal(urls.filter(u => u.includes("scope=capitals")).length, 2);
   assert.match((await texts(page, "#savings-tbody tr:nth-child(3) td"))[0], /^27'258$/);
 
   await settle(page, () => page.evaluate(async () => {
@@ -38,8 +38,8 @@ test("a BVG amount reloads both parts; a location change keeps the ranking", { s
     setLocation({ id: 630000000, name: "6300 Zug", bfsId: 1711, canton: "ZG" });
   }));
   await delay(300);
-  assert.equal(urls.filter(u => u.includes("scope=capitals")).length, 1);
-  assert.equal(urls.length, 3);
+  assert.equal(urls.filter(u => u.includes("scope=capitals")).length, 2);
+  assert.equal(urls.length, 4);
   assert.match(await text(page, "#savings-rank-tbody tr.row-you th"), /^Zug \(ZG\)/);
   assert.deepEqual(page.errors, []);
 });
@@ -51,5 +51,5 @@ test("the tab is not fetched until it is shown", { skip }, async () => {
   assert.deepEqual(seen, []);
   await clickTab(page, "savings");
   await rankRows(page);
-  assert.equal(seen.length, 2);
+  assert.equal(seen.length, 3);
 });

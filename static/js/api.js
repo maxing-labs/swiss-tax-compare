@@ -58,11 +58,24 @@ export function fetchHistory(s, signal) {
   return getJson(`/api/history?${householdParams(s)}`, signal);
 }
 
+// Split 26 cantonal capitals into two 13-canton batches so each request stays well below
+// Cloudflare Workers Free's 50-subrequest limit (1 budget + 13 * 3 tiers = 40 upstream calls).
+const CAPITAL_CANTON_BATCHES = [
+  "1,2,3,4,5,6,7,8,9,10,11,12,13",
+  "14,15,16,17,18,19,20,21,22,23,24,25,26"
+];
+
 // The tax-saving query: household plus the amounts; no `pillar3a` means the year's limit
-export function fetchSavings(s, signal, { capitals = false } = {}) {
-  const p = householdParams(s);
-  if (s.pillar3a !== null) p.set("pillar3a", String(s.pillar3a));
-  p.set("bvg", String(s.bvg));
-  if (capitals) p.set("scope", "capitals");
-  return getJson(`/api/savings?${p}`, signal);
+export async function fetchSavings(s, signal, { capitals = false } = {}) {
+  const base = householdParams(s);
+  if (s.pillar3a !== null) base.set("pillar3a", String(s.pillar3a));
+  base.set("bvg", String(s.bvg));
+  if (!capitals) return getJson(`/api/savings?${base}`, signal);
+  const parts = await Promise.all(CAPITAL_CANTON_BATCHES.map((cantons) => {
+    const p = new URLSearchParams(base);
+    p.set("scope", "capitals");
+    p.set("cantons", cantons);
+    return getJson(`/api/savings?${p}`, signal);
+  }));
+  return { ...parts[0], rows: parts.flatMap(part => part.rows) };
 }

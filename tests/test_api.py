@@ -229,6 +229,12 @@ class SavingsTest(unittest.TestCase):
         self.assertEqual(set(data["rows"][0]), {"loc", "tiers"})
         self.assertEqual(len([c for c in self.calls if c[0] == "API_calculateTaxBudget"]), 1)
 
+    def test_capitals_subset(self):
+        data = api.handle_api_request("/api/savings", qs("inc1=120000&scope=capitals&cantons=1,26&bvg=5000"))
+        self.assertEqual(len(data["rows"]), 2)
+        with self.assertRaises(api.BadRequestError):
+            api.handle_api_request("/api/savings", qs("inc1=120000&scope=capitals&cantons=99"))
+
     def test_deduction_above_income_stops_at_zero_tax_in_taxable_mode(self):
         data = api.handle_api_request("/api/savings", qs("mode=taxable&taxable=5000&pillar3a=7258"))
         self.assertEqual(data["tiers"][1]["total"], 0)

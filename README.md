@@ -4,7 +4,7 @@
 
 Income and wealth tax for every Swiss municipality, from the official calculator of the Swiss Federal Tax Administration (FTA / ESTV): see where your money goes, and compare a few chosen places for the same household, with rankings across all 2'110 municipalities also available.
 
-**Live:** https://swiss-tax-compare.vercel.app · **Sister project:** [Swiss Insurance Compare](https://swiss-insurance-compare.vercel.app) ([GitHub](https://github.com/maxing-labs/swiss-insurance-compare))
+**Live:** https://swiss-tax-compare.pages.dev (mirror: https://swiss-tax-compare.vercel.app) · **Sister project:** [Swiss Insurance Compare](https://swiss-insurance-compare.pages.dev) ([GitHub](https://github.com/maxing-labs/swiss-insurance-compare))
 
 ![Swiss Tax Compare — Tax breakdown and gross-to-taxable path](docs/screenshot.png)
 
@@ -38,11 +38,11 @@ python3 -m unittest                # backend tests, offline, against the snapsho
 node --test 'tests/js/*.test.mjs'  # frontend unit tests (Node >= 22)
 ```
 
-Production runs on Vercel: `vercel.json` routes `/api/*` to `api/index.py` and everything else to `static/`.
+Production runs serverlessly on Cloudflare Pages (`functions/api/[[path]].js` + `static/_headers`) and Vercel (`vercel.json` routing `/api/*` to `api/index.py` and everything else to `static/`).
 
 ## Built with coding agents
 
-Like its sibling [Swiss Insurance Compare](https://github.com/maxing-labs/swiss-insurance-compare) ([live](https://swiss-insurance-compare.vercel.app), health insurance premiums), every commit so far was written by an AI coding agent. [`AGENTS.md`](AGENTS.md) is the brief every agent reads first; [`.agents/docs/`](.agents/docs/) holds one record per session and the roadmap. The notes are in Chinese, the language the maintainer uses with the agents.
+Like its sibling [Swiss Insurance Compare](https://github.com/maxing-labs/swiss-insurance-compare) ([live](https://swiss-insurance-compare.pages.dev), health insurance premiums), every commit so far was written by an AI coding agent. [`AGENTS.md`](AGENTS.md) is the brief every agent reads first; [`.agents/docs/`](.agents/docs/) holds one record per session and the roadmap. The notes are in Chinese, the language the maintainer uses with the agents.
 
 ## License
 
